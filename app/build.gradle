@@ -30,4 +30,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.jakewharton:butterknife:8.5.1'
     compile 'com.squareup.leakcanary:leakcanary-android:1.5'
+    compile 'com.nononsenseapps:filepicker:3.0.0'
 }
