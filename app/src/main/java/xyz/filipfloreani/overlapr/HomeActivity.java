@@ -14,9 +14,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
+import xyz.filipfloreani.overlapr.graphing.PAFGraphingActivity;
+
 public class HomeActivity extends AppCompatActivity {
 
+    public static final String EXTRA_PAF_PATH = "overlapr.intent.PAF_PATH";
+
     private static final int FILE_CODE = 100;
+
+    FloatingActionButton fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,10 +35,10 @@ public class HomeActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
                 startFilePicker();
             }
         });
@@ -73,13 +83,20 @@ public class HomeActivity extends AppCompatActivity {
                 if (clip != null) {
                     for (int i = 0; i < clip.getItemCount(); i++) {
                         Uri uri = clip.getItemAt(i).getUri();
-                        Log.d("HomeActivity", uri.toString());
                     }
                 }
             } else {
-                Uri uri = data.getData();
+                Uri fileUri = data.getData();
                 // Do something with the URI
-                Log.d("HomeActivity", uri.toString());
+                Log.d("HomeActivity", fileUri.toString());
+
+                // Create new activity & send it the path for the PAF file.
+                // It's task should be to create a graph from the PAF result, but I'm not
+                // sure which parameter should it use to actually create it.
+
+                Intent intent = new Intent(this, PAFGraphingActivity.class);
+                intent.putExtra(EXTRA_PAF_PATH, fileUri);
+                startActivity(intent);
             }
         }
     }

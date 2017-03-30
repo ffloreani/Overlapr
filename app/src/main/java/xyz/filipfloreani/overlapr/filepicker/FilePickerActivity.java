@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-package xyz.filipfloreani.overlapr;
+package xyz.filipfloreani.overlapr.filepicker;
 
 import android.annotation.SuppressLint;
 import android.os.Environment;

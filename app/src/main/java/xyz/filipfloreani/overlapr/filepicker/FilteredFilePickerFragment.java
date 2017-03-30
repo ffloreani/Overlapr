@@ -1,4 +1,4 @@
-package xyz.filipfloreani.overlapr;
+package xyz.filipfloreani.overlapr.filepicker;
 
 import android.support.annotation.NonNull;
 
