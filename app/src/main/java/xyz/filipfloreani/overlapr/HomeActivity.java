@@ -9,14 +9,11 @@ import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.RelativeLayout;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
 import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
 import xyz.filipfloreani.overlapr.graphing.PAFGraphingActivity;
 
@@ -26,7 +23,8 @@ public class HomeActivity extends AppCompatActivity {
 
     private static final int FILE_CODE = 100;
 
-    FloatingActionButton fab;
+    private FloatingActionButton fab;
+    private RelativeLayout emptyStateLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +40,9 @@ public class HomeActivity extends AppCompatActivity {
                 startFilePicker();
             }
         });
+
+        emptyStateLayout = (RelativeLayout) findViewById(R.id.empty_state);
+        emptyStateLayout.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -54,7 +55,6 @@ public class HomeActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
@@ -77,6 +77,7 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == FILE_CODE && resultCode == Activity.RESULT_OK) {
+            // TODO: Simplify this and remove the option to select multiple files
             if (data.getBooleanExtra(FilePickerActivity.EXTRA_ALLOW_MULTIPLE, false)) {
                 ClipData clip = data.getClipData();
 
@@ -87,12 +88,6 @@ public class HomeActivity extends AppCompatActivity {
                 }
             } else {
                 Uri fileUri = data.getData();
-                // Do something with the URI
-                Log.d("HomeActivity", fileUri.toString());
-
-                // Create new activity & send it the path for the PAF file.
-                // It's task should be to create a graph from the PAF result, but I'm not
-                // sure which parameter should it use to actually create it.
 
                 Intent intent = new Intent(this, PAFGraphingActivity.class);
                 intent.putExtra(EXTRA_PAF_PATH, fileUri);
