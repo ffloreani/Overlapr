@@ -1,5 +1,7 @@
 package xyz.filipfloreani.overlapr.graphing;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -20,8 +22,10 @@ import com.github.mikephil.charting.highlight.Highlight;
 
 import java.util.List;
 
-import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 import xyz.filipfloreani.overlapr.R;
+import xyz.filipfloreani.overlapr.db.Repository;
+import xyz.filipfloreani.overlapr.model.LineChartModel;
+import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 
 import static xyz.filipfloreani.overlapr.HomeActivity.EXTRA_PAF_PATH;
 
@@ -110,4 +114,15 @@ public class PAFGraphingActivity extends AppCompatActivity {
         return dataSet;
     }
 
+
+    private void writeToDatabase(LineDataSet dataSet) {
+        SQLiteDatabase db = Repository.getDatabase(this);
+
+        ContentValues values = new ContentValues();
+        values.put("title", "Testni naslov");
+        values.put("creation_date", GeneralUtils.getUTCNowAsTimestamp());
+        values.put("chart_data", LineChartModel.toJson(dataSet));
+
+        Repository.insertRecord(LineChartModel.LineChartEntry.TABLE_NAME, values);
+    }
 }
