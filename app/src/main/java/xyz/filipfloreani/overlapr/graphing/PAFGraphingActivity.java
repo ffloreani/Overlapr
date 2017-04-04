@@ -3,8 +3,10 @@ package xyz.filipfloreani.overlapr.graphing;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -105,8 +107,12 @@ public class PAFGraphingActivity extends AppCompatActivity {
     private LineDataSet createLineDataSet(List<Entry> chartEntries) {
         LineDataSet dataSet = new LineDataSet(chartEntries, "Matches");
         dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-        dataSet.setColor(Color.parseColor("#4CAF50"));
+        dataSet.setColor(Color.parseColor("#3C9F40"));
         dataSet.setDrawCircles(false);
+
+        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
+        dataSet.setFillDrawable(gradientDrawable);
+        dataSet.setDrawFilled(true);
 
         dataSet.setDrawHorizontalHighlightIndicator(false);
         dataSet.setHighLightColor(Color.parseColor("#C62828"));
@@ -119,10 +125,13 @@ public class PAFGraphingActivity extends AppCompatActivity {
         SQLiteDatabase db = Repository.getDatabase(this);
 
         ContentValues values = new ContentValues();
-        values.put("title", "Testni naslov");
-        values.put("creation_date", GeneralUtils.getUTCNowAsTimestamp());
-        values.put("chart_data", LineChartModel.toJson(dataSet));
+        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_TITLE, "Testni naslov");
+        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CREATION_DATE, GeneralUtils.getUTCNowAsTimestamp());
+        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CHART_DATA, LineChartModel.toJson(dataSet));
 
-        Repository.insertRecord(LineChartModel.LineChartEntry.TABLE_NAME, values);
+        long rowId = Repository.upsertRecord(LineChartModel.LineChartEntry.TABLE_NAME, values);
+        if(rowId > -1) {
+            // TODO: Locally broadcast upsert information to all broadcast listeners
+        }
     }
 }

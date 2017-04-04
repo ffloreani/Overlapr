@@ -19,6 +19,8 @@ public class LineChartModel {
     private Date creationDate;
     private LineDataSet lineDataSet;
 
+    public LineChartModel() {}
+
     public LineChartModel(String title, Date creationDate, LineDataSet lineDataSet) {
         this.title = title;
         this.creationDate = creationDate;

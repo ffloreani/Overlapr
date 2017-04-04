@@ -8,16 +8,25 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.RelativeLayout;
 
+import java.util.List;
+
+import xyz.filipfloreani.overlapr.adapter.HistoryAdapter;
+import xyz.filipfloreani.overlapr.db.LineChartRepository;
 import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
 import xyz.filipfloreani.overlapr.graphing.PAFGraphingActivity;
+import xyz.filipfloreani.overlapr.model.LineChartModel;
 
 public class HomeActivity extends AppCompatActivity {
+    // TODO: Setup a local broadcast listener
 
     public static final String EXTRA_PAF_PATH = "overlapr.intent.PAF_PATH";
 
@@ -25,6 +34,10 @@ public class HomeActivity extends AppCompatActivity {
 
     private FloatingActionButton fab;
     private RelativeLayout emptyStateLayout;
+    private RecyclerView rvHistory;
+
+    List<LineChartModel> chartModelList;
+    HistoryAdapter historyAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +55,24 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         emptyStateLayout = (RelativeLayout) findViewById(R.id.empty_state);
-        emptyStateLayout.setVisibility(View.VISIBLE);
+        rvHistory = (RecyclerView) findViewById(R.id.rvHistory);
+        rvHistory.setHasFixedSize(true);
+
+        loadData();
+        if (chartModelList == null || chartModelList.size() == 0) {
+            rvHistory.setVisibility(View.GONE);
+            emptyStateLayout.setVisibility(View.VISIBLE);
+        } else {
+            rvHistory.setVisibility(View.VISIBLE);
+            emptyStateLayout.setVisibility(View.GONE);
+        }
+
+        historyAdapter = new HistoryAdapter(chartModelList);
+        rvHistory.setAdapter(historyAdapter);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        rvHistory.setLayoutManager(layoutManager);
+        rvHistory.addItemDecoration(new DividerItemDecoration(this, layoutManager.getOrientation()));
     }
 
     @Override
@@ -60,6 +90,11 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void loadData() {
+        // TODO Replace with a loader?
+        chartModelList = LineChartRepository.getAllModels(HomeActivity.this);
     }
 
     private void startFilePicker() {
@@ -95,5 +130,4 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
     }
-
 }

@@ -4,4 +4,5 @@
     <string name="highlight">Highlight</string>
     <string name="empty_state_head">You don\'t have any scans yet</string>
     <string name="empty_state_desc">Press the button bellow to change that!</string>
+    <string name="graph_title">Overlap graph</string>
 </resources>

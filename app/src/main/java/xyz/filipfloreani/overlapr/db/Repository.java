@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteException;
  */
 public abstract class Repository {
 
-    private static SQLiteDatabase db;
+    protected static SQLiteDatabase db;
 
     public static void startTransaction(Context context) {
         getDatabase(context).beginTransactionNonExclusive();

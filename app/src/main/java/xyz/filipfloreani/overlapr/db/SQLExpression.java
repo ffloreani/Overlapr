@@ -18,4 +18,12 @@ public final class SQLExpression {
 
     public static final String SELECT_ALL_GRAPH =
             "SELECT * FROM " + LineChartModel.LineChartEntry.TABLE_NAME;
+
+    public static final String SELECT_GRAPH_WHERE_ID =
+            "SELECT * FROM " + LineChartModel.LineChartEntry.TABLE_NAME +
+                    " WHERE " + LineChartModel.LineChartEntry._ID + " = ";
+
+    public static final String SELECT_GRAPH_WHERE_TITLE =
+            "SELECT * FROM " + LineChartModel.LineChartEntry.TABLE_NAME +
+                    " WHERE " + LineChartModel.LineChartEntry.COLUMN_NAME_TITLE + " = ";
 }
