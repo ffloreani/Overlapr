@@ -2,10 +2,12 @@ package xyz.filipfloreani.overlapr.model;
 
 import android.provider.BaseColumns;
 
+import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by filipfloreani on 03/04/2017.
@@ -19,7 +21,8 @@ public class LineChartModel {
     private Date creationDate;
     private LineDataSet lineDataSet;
 
-    public LineChartModel() {}
+    public LineChartModel() {
+    }
 
     public LineChartModel(String title, Date creationDate, LineDataSet lineDataSet) {
         this.title = title;
@@ -51,7 +54,7 @@ public class LineChartModel {
         this.lineDataSet = lineDataSet;
     }
 
-    public static String toJson(LineDataSet object) {
+    public static String toJson(List<Entry> object) {
         return gson.toJson(object);
     }
 

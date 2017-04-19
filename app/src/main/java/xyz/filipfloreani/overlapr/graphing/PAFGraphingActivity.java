@@ -1,7 +1,7 @@
 package xyz.filipfloreani.overlapr.graphing;
 
 import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -24,12 +24,13 @@ import com.github.mikephil.charting.highlight.Highlight;
 
 import java.util.List;
 
+import xyz.filipfloreani.overlapr.HomeActivity;
 import xyz.filipfloreani.overlapr.R;
-import xyz.filipfloreani.overlapr.db.Repository;
 import xyz.filipfloreani.overlapr.model.LineChartModel;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 
 import static xyz.filipfloreani.overlapr.HomeActivity.EXTRA_PAF_PATH;
+import static xyz.filipfloreani.overlapr.HomeActivity.SHARED_PREF_HOME_ACTIVITY;
 
 public class PAFGraphingActivity extends AppCompatActivity {
 
@@ -39,11 +40,15 @@ public class PAFGraphingActivity extends AppCompatActivity {
 
     private Uri filePath;
     private boolean isGraphShown = false;
+    private String graphTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pafgraphing);
+
+        getGraphTitle();
+        setTitle(graphTitle);
 
         lineChart = (LineChart) findViewById(R.id.chart);
         lineChart.setHardwareAccelerationEnabled(true);
@@ -62,7 +67,16 @@ public class PAFGraphingActivity extends AppCompatActivity {
             }
         });
 
+        // Parse the file at the received path
         parsePAFFile();
+    }
+
+    /**
+     * Gets the title for this graph from the HomeActivity SharedPreferences storage.
+     */
+    private void getGraphTitle() {
+        SharedPreferences preferences = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
+        graphTitle = preferences.getString(HomeActivity.SHARED_PREF_GRAPH_TITLE, "Overlapr graph " + GeneralUtils.getUTCNow());
     }
 
     private void showHighlightValue() {
@@ -78,12 +92,16 @@ public class PAFGraphingActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Starts a new ParserTask with the received file path
+     */
     private void parsePAFFile() {
         new ParserTask(this).execute(filePath);
     }
 
     public void setDataToChart(List<Entry> chartEntries) {
-        LineData lineData = new LineData(createLineDataSet(chartEntries));
+        LineDataSet dataSet = createLineDataSet(chartEntries);
+        LineData lineData = new LineData(dataSet);
 
         // Set up X-axis
         XAxis xAxis = lineChart.getXAxis();
@@ -102,6 +120,8 @@ public class PAFGraphingActivity extends AppCompatActivity {
         lineChart.invalidate();
 
         isGraphShown = true;
+
+        writeToDatabase(chartEntries);
     }
 
     private LineDataSet createLineDataSet(List<Entry> chartEntries) {
@@ -120,18 +140,22 @@ public class PAFGraphingActivity extends AppCompatActivity {
         return dataSet;
     }
 
-
-    private void writeToDatabase(LineDataSet dataSet) {
-        SQLiteDatabase db = Repository.getDatabase(this);
-
+    /**
+     * Write the given dataset into the database.
+     *
+     * @param dataSet The dataset to be written to the database
+     */
+    private void writeToDatabase(final List<Entry> dataSet) {
         ContentValues values = new ContentValues();
-        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_TITLE, "Testni naslov");
-        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CREATION_DATE, GeneralUtils.getUTCNowAsTimestamp());
-        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CHART_DATA, LineChartModel.toJson(dataSet));
 
-        long rowId = Repository.upsertRecord(LineChartModel.LineChartEntry.TABLE_NAME, values);
-        if(rowId > -1) {
-            // TODO: Locally broadcast upsert information to all broadcast listeners
-        }
+        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_TITLE, graphTitle);
+        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CREATION_DATE, GeneralUtils.getUTCNowAsTimestamp());
+        //values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CHART_DATA, LineChartModel.toJson(dataSet));
+
+//        long rowId = Repository.upsertRecord(LineChartModel.LineChartEntry.TABLE_NAME, values);
+//        if(rowId > -1) {
+//            Intent upsertIntent = new Intent(HomeActivity.INTENT_FILTER_GRAPH_INSERT);
+//            LocalBroadcastManager.getInstance(this).sendBroadcast(upsertIntent);
+//        }
     }
 }

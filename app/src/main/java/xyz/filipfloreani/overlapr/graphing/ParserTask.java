@@ -3,7 +3,6 @@ package xyz.filipfloreani.overlapr.graphing;
 import android.app.ProgressDialog;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.github.mikephil.charting.data.Entry;
 

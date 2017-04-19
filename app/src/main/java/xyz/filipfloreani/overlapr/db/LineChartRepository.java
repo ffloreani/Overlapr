@@ -55,6 +55,25 @@ public class LineChartRepository extends Repository {
         return model;
     }
 
+    public static LineChartModel getModelWithMaxId(Context context) {
+        getDatabase(context);
+
+        LineChartModel model = new LineChartModel();
+        Cursor c = null;
+        try {
+            c = db.rawQuery(SQLExpression.SELECT_GRAPH_MAX_ID, null);
+            if (c.moveToNext()) {
+                model = parseCursorRow(c);
+            }
+        } finally {
+            if (c != null) {
+                c.close();
+            }
+        }
+
+        return model;
+    }
+
     public static LineChartModel getModelByTitle(Context context, String title) {
         getDatabase(context);
 

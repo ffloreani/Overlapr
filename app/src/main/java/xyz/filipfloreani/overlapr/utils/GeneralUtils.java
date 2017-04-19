@@ -4,9 +4,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
 
-import com.github.mikephil.charting.data.LineDataSet;
-import com.google.gson.Gson;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;

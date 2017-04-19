@@ -1,20 +1,30 @@
 package xyz.filipfloreani.overlapr;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 
 import java.util.List;
@@ -26,18 +36,29 @@ import xyz.filipfloreani.overlapr.graphing.PAFGraphingActivity;
 import xyz.filipfloreani.overlapr.model.LineChartModel;
 
 public class HomeActivity extends AppCompatActivity {
-    // TODO: Setup a local broadcast listener
 
+    public static final String SHARED_PREF_HOME_ACTIVITY = "overlapr.activity.HOME_ACTIVITY";
+    public static final String SHARED_PREF_GRAPH_TITLE = "overlapr.prefs.GRAPH_TITLE";
+    public static final String INTENT_FILTER_GRAPH_INSERT = "overlapr.filter.GRAPH_INSERT";
     public static final String EXTRA_PAF_PATH = "overlapr.intent.PAF_PATH";
-
     private static final int FILE_CODE = 100;
 
-    private FloatingActionButton fab;
-    private RelativeLayout emptyStateLayout;
-    private RecyclerView rvHistory;
+    FloatingActionButton fab;
+    RelativeLayout emptyStateLayout;
+    RecyclerView rvHistory;
 
     List<LineChartModel> chartModelList;
     HistoryAdapter historyAdapter;
+    IntentFilter receiveFilter;
+
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            LineChartModel newModel = LineChartRepository.getModelWithMaxId(context);
+            chartModelList.add(newModel);
+            historyAdapter.notifyItemInserted(chartModelList.size() - 1);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +71,7 @@ public class HomeActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startFilePicker();
+                displayNameDialog();
             }
         });
 
@@ -73,6 +94,17 @@ public class HomeActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         rvHistory.setLayoutManager(layoutManager);
         rvHistory.addItemDecoration(new DividerItemDecoration(this, layoutManager.getOrientation()));
+
+        receiveFilter = new IntentFilter(INTENT_FILTER_GRAPH_INSERT);
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, receiveFilter);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (receiver != null) {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+        }
     }
 
     @Override
@@ -83,12 +115,6 @@ public class HomeActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -97,10 +123,49 @@ public class HomeActivity extends AppCompatActivity {
         chartModelList = LineChartRepository.getAllModels(HomeActivity.this);
     }
 
+    /**
+     * Creates a new AlertDialog containing a text input field. When the positive button is pressed,
+     * the entered string is saved to SharedPreferences with the HomeActivity key. After that, the
+     * {@code startFilePicker()} method is called.
+     */
+    private void displayNameDialog() {
+        AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
+
+        //View inflatedView = LayoutInflater.from(this).inflate(R.layout.dialog_title, (ViewGroup) findViewById(android.R.id.content), false);
+        final EditText inputTextView = new EditText(this);
+        inputTextView.setPadding(16, 16, 16, 16);
+
+        adBuilder.setTitle("New graph")
+                .setMessage("Title")
+                .setView(inputTextView)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        String title = inputTextView.getText().toString();
+
+                        SharedPreferences preferences = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putString(SHARED_PREF_GRAPH_TITLE, title);
+                        editor.commit();
+
+                        startFilePicker();
+                    }
+                }).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        adBuilder.show();
+    }
+
+    /**
+     * Starts the FilePicker activity.
+     */
     private void startFilePicker() {
         Intent i = new Intent(this, FilePickerActivity.class);
 
-        // Set these depending on your use case. These are the defaults.
         i.putExtra(FilePickerActivity.EXTRA_ALLOW_MULTIPLE, false);
         i.putExtra(FilePickerActivity.EXTRA_ALLOW_CREATE_DIR, false);
         i.putExtra(FilePickerActivity.EXTRA_MODE, FilePickerActivity.MODE_FILE);
