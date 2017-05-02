@@ -1,18 +1,14 @@
 package xyz.filipfloreani.overlapr;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ClipData;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
@@ -25,38 +21,29 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 
-import java.util.List;
-
+import io.realm.Realm;
+import io.realm.RealmResults;
 import xyz.filipfloreani.overlapr.adapter.HistoryAdapter;
-import xyz.filipfloreani.overlapr.db.LineChartRepository;
 import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
 import xyz.filipfloreani.overlapr.graphing.PAFGraphingActivity;
-import xyz.filipfloreani.overlapr.model.LineChartModel;
+import xyz.filipfloreani.overlapr.model.RealmChartModel;
+import xyz.filipfloreani.overlapr.sorting.SortingActivity;
 
 public class HomeActivity extends AppCompatActivity {
 
     public static final String SHARED_PREF_HOME_ACTIVITY = "overlapr.activity.HOME_ACTIVITY";
     public static final String SHARED_PREF_GRAPH_TITLE = "overlapr.prefs.GRAPH_TITLE";
-    public static final String INTENT_FILTER_GRAPH_INSERT = "overlapr.filter.GRAPH_INSERT";
     public static final String EXTRA_PAF_PATH = "overlapr.intent.PAF_PATH";
     private static final int FILE_CODE = 100;
 
     FloatingActionButton fab;
     RelativeLayout emptyStateLayout;
-    RecyclerView rvHistory;
+    RecyclerView historyRecyclerView;
 
-    List<LineChartModel> chartModelList;
+    RealmResults<RealmChartModel> chartModelList;
     HistoryAdapter historyAdapter;
-    IntentFilter receiveFilter;
 
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            LineChartModel newModel = LineChartRepository.getModelWithMaxId(context);
-            chartModelList.add(newModel);
-            historyAdapter.notifyItemInserted(chartModelList.size() - 1);
-        }
-    };
+    private Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +51,8 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        realm = Realm.getDefaultInstance();
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -73,36 +62,41 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        // Load the empty state layout & the recyclerview history layout
         emptyStateLayout = (RelativeLayout) findViewById(R.id.empty_state);
-        rvHistory = (RecyclerView) findViewById(R.id.rvHistory);
-        rvHistory.setHasFixedSize(true);
+        historyRecyclerView = (RecyclerView) findViewById(R.id.rvHistory);
 
         loadData();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         if (chartModelList == null || chartModelList.size() == 0) {
-            rvHistory.setVisibility(View.GONE);
+            historyRecyclerView.setVisibility(View.GONE);
             emptyStateLayout.setVisibility(View.VISIBLE);
         } else {
-            rvHistory.setVisibility(View.VISIBLE);
+            historyRecyclerView.setVisibility(View.VISIBLE);
             emptyStateLayout.setVisibility(View.GONE);
         }
 
-        historyAdapter = new HistoryAdapter(chartModelList);
-        rvHistory.setAdapter(historyAdapter);
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        rvHistory.setLayoutManager(layoutManager);
-        rvHistory.addItemDecoration(new DividerItemDecoration(this, layoutManager.getOrientation()));
-
-        receiveFilter = new IntentFilter(INTENT_FILTER_GRAPH_INSERT);
-        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, receiveFilter);
+        if (historyAdapter == null) {
+            // Load the adapter for the history recyclerview & set up the layout manager
+            historyAdapter = new HistoryAdapter(chartModelList);
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+            historyRecyclerView.setLayoutManager(layoutManager);
+            historyRecyclerView.setAdapter(historyAdapter);
+            historyRecyclerView.setHasFixedSize(true);
+            historyRecyclerView.addItemDecoration(new DividerItemDecoration(this, layoutManager.getOrientation()));
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (receiver != null) {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
-        }
+
+        historyRecyclerView.setAdapter(null);
+        realm.close();
     }
 
     @Override
@@ -113,12 +107,25 @@ public class HomeActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.sorting_item:
+                startSortingActivity();
+                return true;
+            case R.id.selection_item:
+                displayNameDialog();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void startSortingActivity() {
+        Intent i = new Intent(this, SortingActivity.class);
+        startActivity(i);
     }
 
     private void loadData() {
-        // TODO Replace with a loader?
-        chartModelList = LineChartRepository.getAllModels(HomeActivity.this);
+        chartModelList = realm.where(RealmChartModel.class).findAll();
     }
 
     /**
@@ -172,6 +179,13 @@ public class HomeActivity extends AppCompatActivity {
         startActivityForResult(i, FILE_CODE);
     }
 
+    /**
+     * Processes the results of the FilePicker activity.
+     *
+     * @param requestCode The code that was used to start the activity
+     * @param resultCode  The code that marks the result of the activity
+     * @param data        Data sent from the activity
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == FILE_CODE && resultCode == Activity.RESULT_OK) {

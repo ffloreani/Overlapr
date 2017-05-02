@@ -7,21 +7,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.List;
-
+import io.realm.OrderedRealmCollection;
+import io.realm.RealmRecyclerViewAdapter;
 import xyz.filipfloreani.overlapr.R;
-import xyz.filipfloreani.overlapr.model.LineChartModel;
+import xyz.filipfloreani.overlapr.model.RealmChartModel;
 
 /**
  * Created by filipfloreani on 04/04/2017.
  */
 
-public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder> {
+public class HistoryAdapter extends RealmRecyclerViewAdapter<RealmChartModel, HistoryAdapter.HistoryViewHolder> {
 
-    private List<LineChartModel> chartModels;
-
-    public HistoryAdapter(List<LineChartModel> chartModels) {
-        this.chartModels = chartModels;
+    public HistoryAdapter(OrderedRealmCollection<RealmChartModel> chartModels) {
+        super(chartModels, true);
     }
 
     @Override
@@ -29,30 +27,25 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         Context context = parent.getContext();
         LayoutInflater layoutInflater = LayoutInflater.from(context);
 
-        View historyView = layoutInflater.inflate(R.layout.item_history, parent);
+        View historyView = layoutInflater.inflate(R.layout.item_history, parent, false);
 
         return new HistoryViewHolder(historyView);
     }
 
     @Override
     public void onBindViewHolder(HistoryViewHolder holder, int position) {
-        LineChartModel model = chartModels.get(position);
-
-        holder.titleTextView.setText(model.getTitle());
-        holder.creationDateTextView.setText(model.getCreationDate().toString());
+        RealmChartModel model = getItem(position);
+        if (model != null) {
+            holder.titleTextView.setText(model.getTitle());
+            holder.creationDateTextView.setText(model.getCreationDate().toString());
+        }
     }
 
-    @Override
-    public int getItemCount() {
-        return chartModels.size();
-    }
+    class HistoryViewHolder extends RecyclerView.ViewHolder {
+        TextView titleTextView;
+        TextView creationDateTextView;
 
-    public static class HistoryViewHolder extends RecyclerView.ViewHolder {
-
-        public TextView titleTextView;
-        public TextView creationDateTextView;
-
-        public HistoryViewHolder(View itemView) {
+        HistoryViewHolder(View itemView) {
             super(itemView);
 
             titleTextView = (TextView) itemView.findViewById(R.id.item_title);

@@ -2,7 +2,8 @@ package xyz.filipfloreani.overlapr;
 
 import android.app.Application;
 
-import com.squareup.leakcanary.LeakCanary;
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
 
 /**
  * Created by filipfloreani on 17/03/2017.
@@ -21,6 +22,9 @@ public class OverlaprApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        LeakCanary.install(this);
+
+        Realm.init(this);
+        RealmConfiguration realmConfig = new RealmConfiguration.Builder().deleteRealmIfMigrationNeeded().build();
+        Realm.setDefaultConfiguration(realmConfig);
     }
 }

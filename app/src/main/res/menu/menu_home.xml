@@ -3,4 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="xyz.filipfloreani.overlapr.HomeActivity">
 
+    <item
+        android:id="@+id/sorting_item"
+        android:title="@string/sorting"
+        android:icon="@drawable/ic_action_sort"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/selection_item"
+        android:title="@string/selection"
+        android:icon="@drawable/ic_action_crop"
+        app:showAsAction="ifRoom" />
 </menu>

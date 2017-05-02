@@ -5,4 +5,7 @@
     <string name="empty_state_head">You don\'t have any scans yet</string>
     <string name="empty_state_desc">Press the button bellow to change that!</string>
     <string name="graph_title">Overlap graph</string>
+    <string name="graph_sorting">Graph sorting</string>
+    <string name="sorting">Sorting</string>
+    <string name="selection">Selection</string>
 </resources>

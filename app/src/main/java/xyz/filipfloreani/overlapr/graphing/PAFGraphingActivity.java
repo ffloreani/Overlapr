@@ -1,6 +1,5 @@
 package xyz.filipfloreani.overlapr.graphing;
 
-import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -9,6 +8,7 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -24,15 +24,22 @@ import com.github.mikephil.charting.highlight.Highlight;
 
 import java.util.List;
 
+import io.realm.Realm;
+import io.realm.RealmAsyncTask;
+import io.realm.RealmList;
 import xyz.filipfloreani.overlapr.HomeActivity;
 import xyz.filipfloreani.overlapr.R;
-import xyz.filipfloreani.overlapr.model.LineChartModel;
+import xyz.filipfloreani.overlapr.model.RealmChartModel;
+import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 
 import static xyz.filipfloreani.overlapr.HomeActivity.EXTRA_PAF_PATH;
 import static xyz.filipfloreani.overlapr.HomeActivity.SHARED_PREF_HOME_ACTIVITY;
 
 public class PAFGraphingActivity extends AppCompatActivity {
+
+    private Realm realm;
+    private RealmAsyncTask writeTransaction = null;
 
     private LineChart lineChart;
     private Button highlightButton;
@@ -46,6 +53,8 @@ public class PAFGraphingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pafgraphing);
+
+        realm = Realm.getDefaultInstance();
 
         getGraphTitle();
         setTitle(graphTitle);
@@ -69,6 +78,15 @@ public class PAFGraphingActivity extends AppCompatActivity {
 
         // Parse the file at the received path
         parsePAFFile();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (writeTransaction != null && !writeTransaction.isCancelled()) {
+            writeTransaction.cancel();
+        }
+        realm.close();
     }
 
     /**
@@ -121,7 +139,7 @@ public class PAFGraphingActivity extends AppCompatActivity {
 
         isGraphShown = true;
 
-        writeToDatabase(chartEntries);
+        writeToRealm(chartEntries);
     }
 
     private LineDataSet createLineDataSet(List<Entry> chartEntries) {
@@ -141,21 +159,32 @@ public class PAFGraphingActivity extends AppCompatActivity {
     }
 
     /**
-     * Write the given dataset into the database.
+     * Write the given dataset into the Realm DB.
      *
      * @param dataSet The dataset to be written to the database
      */
-    private void writeToDatabase(final List<Entry> dataSet) {
-        ContentValues values = new ContentValues();
+    private void writeToRealm(final List<Entry> dataSet) {
+        writeTransaction = realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmChartModel chartModel = new RealmChartModel(graphTitle, GeneralUtils.getUTCNow());
+                RealmList<RealmPointModel> pointModels = GeneralUtils.entriesToChartPoints(dataSet, chartModel);
 
-        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_TITLE, graphTitle);
-        values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CREATION_DATE, GeneralUtils.getUTCNowAsTimestamp());
-        //values.put(LineChartModel.LineChartEntry.COLUMN_NAME_CHART_DATA, LineChartModel.toJson(dataSet));
+                chartModel.setPoints(pointModels);
 
-//        long rowId = Repository.upsertRecord(LineChartModel.LineChartEntry.TABLE_NAME, values);
-//        if(rowId > -1) {
-//            Intent upsertIntent = new Intent(HomeActivity.INTENT_FILTER_GRAPH_INSERT);
-//            LocalBroadcastManager.getInstance(this).sendBroadcast(upsertIntent);
-//        }
+                realm.copyToRealm(pointModels);
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(PAFGraphingActivity.this.getLocalClassName(), "Data copied to Realm!");
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(PAFGraphingActivity.this.getLocalClassName(), "Data copying failed.");
+                error.printStackTrace();
+            }
+        });
     }
 }
