@@ -177,12 +177,12 @@ public class PAFGraphingActivity extends AppCompatActivity {
         }, new Realm.Transaction.OnSuccess() {
             @Override
             public void onSuccess() {
-                Log.d(PAFGraphingActivity.this.getLocalClassName(), "Data copied to Realm!");
+                Log.d(PAFGraphingActivity.this.getLocalClassName(), "Chart successfully copied to Realm!");
             }
         }, new Realm.Transaction.OnError() {
             @Override
             public void onError(Throwable error) {
-                Log.d(PAFGraphingActivity.this.getLocalClassName(), "Data copying failed.");
+                Log.d(PAFGraphingActivity.this.getLocalClassName(), "Chart copying failed.");
                 error.printStackTrace();
             }
         });

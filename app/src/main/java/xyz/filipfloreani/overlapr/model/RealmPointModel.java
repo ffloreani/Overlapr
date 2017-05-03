@@ -14,14 +14,14 @@ public class RealmPointModel extends RealmObject {
 
     @PrimaryKey
     private String uuid = UUID.randomUUID().toString();
-    private short xCoor;
-    private short yCoor;
+    private float xCoor;
+    private float yCoor;
     private RealmChartModel chart;
 
     public RealmPointModel() {
     }
 
-    public RealmPointModel(short xCoor, short yCoor, RealmChartModel chart) {
+    public RealmPointModel(float xCoor, float yCoor, RealmChartModel chart) {
         this.xCoor = xCoor;
         this.yCoor = yCoor;
         this.chart = chart;
@@ -35,19 +35,19 @@ public class RealmPointModel extends RealmObject {
         this.uuid = uuid;
     }
 
-    public short getxCoor() {
+    public float getxCoor() {
         return xCoor;
     }
 
-    public void setxCoor(short xCoor) {
+    public void setxCoor(float xCoor) {
         this.xCoor = xCoor;
     }
 
-    public short getyCoor() {
+    public float getyCoor() {
         return yCoor;
     }
 
-    public void setyCoor(short yCoor) {
+    public void setyCoor(float yCoor) {
         this.yCoor = yCoor;
     }
 

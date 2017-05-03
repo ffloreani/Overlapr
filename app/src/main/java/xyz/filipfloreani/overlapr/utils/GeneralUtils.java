@@ -61,21 +61,10 @@ public final class GeneralUtils {
     public static RealmList<RealmPointModel> entriesToChartPoints(List<Entry> dataSet, RealmChartModel chart) {
         RealmList<RealmPointModel> realmPoints = new RealmList<>();
         for (Entry entry : dataSet) {
-            RealmPointModel realmPoint =
-                    new RealmPointModel(floatToShort(entry.getX()), floatToShort(entry.getY()), chart);
+            RealmPointModel realmPoint = new RealmPointModel(entry.getX(), entry.getY(), chart);
             realmPoints.add(realmPoint);
         }
 
         return realmPoints;
-    }
-
-    private static short floatToShort(float num) {
-        if (num < Short.MIN_VALUE) {
-            return Short.MIN_VALUE;
-        }
-        if (num > Short.MAX_VALUE) {
-            return Short.MAX_VALUE;
-        }
-        return (short) Math.round(num);
     }
 }

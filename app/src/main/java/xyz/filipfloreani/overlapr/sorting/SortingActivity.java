@@ -34,7 +34,7 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
 
         // TODO Load chart objects from Realm
         charts = loadCharts();
-        sortingAdapter = new SortingAdapter(this, charts);
+        sortingAdapter = new SortingAdapter(this, charts, realm);
         flingContainer.init(this, sortingAdapter);
     }
 
@@ -55,7 +55,6 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
 
     @Override
     public void removeFirstObjectInAdapter() {
-
     }
 
     @Override
@@ -64,10 +63,6 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
                 .setAction("Undo", new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (o instanceof RealmChartModel) {
-                            RealmChartModel chartModel = (RealmChartModel) o;
-
-                        }
                     }
                 })
                 .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
@@ -80,7 +75,6 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
                 .setAction("Undo", new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-
                     }
                 })
                 .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
