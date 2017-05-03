@@ -18,8 +18,11 @@ import xyz.filipfloreani.overlapr.model.RealmChartModel;
 
 public class HistoryAdapter extends RealmRecyclerViewAdapter<RealmChartModel, HistoryAdapter.HistoryViewHolder> {
 
-    public HistoryAdapter(OrderedRealmCollection<RealmChartModel> chartModels) {
+    private OnHistoryItemClickListener onClickListener;
+
+    public HistoryAdapter(OrderedRealmCollection<RealmChartModel> chartModels, OnHistoryItemClickListener onClickListener) {
         super(chartModels, true);
+        this.onClickListener = onClickListener;
     }
 
     @Override
@@ -28,8 +31,16 @@ public class HistoryAdapter extends RealmRecyclerViewAdapter<RealmChartModel, Hi
         LayoutInflater layoutInflater = LayoutInflater.from(context);
 
         View historyView = layoutInflater.inflate(R.layout.item_history, parent, false);
+        final HistoryViewHolder viewHolder = new HistoryViewHolder(historyView);
 
-        return new HistoryViewHolder(historyView);
+        historyView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onClickListener.onItemClick(v, viewHolder.getAdapterPosition()); // TODO Or getLayoutPosition()?
+            }
+        });
+
+        return viewHolder;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package xyz.filipfloreani.overlapr.network;
+package xyz.filipfloreani.overlapr.sync;
 
 import android.util.Log;
 

@@ -35,7 +35,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".graphing.PAFGraphingActivity"
+            android:name=".graphing.GraphingActivity"
             android:label="@string/graph_title" />
         <activity
             android:name=".sorting.SortingActivity"

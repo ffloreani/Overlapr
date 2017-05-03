@@ -25,9 +25,9 @@ public class ParserTask extends AsyncTask<Uri, Void, List<Entry>> {
     private static final String REGEX_GROUP_PAF = "(\\d+)";
 
     private ProgressDialog dialog;
-    private PAFGraphingActivity activity;
+    private GraphingActivity activity;
 
-    public ParserTask(PAFGraphingActivity activity) {
+    public ParserTask(GraphingActivity activity) {
         dialog = new ProgressDialog(activity);
         this.activity = activity;
     }

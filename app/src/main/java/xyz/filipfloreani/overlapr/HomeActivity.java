@@ -24,15 +24,17 @@ import android.widget.RelativeLayout;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import xyz.filipfloreani.overlapr.adapter.HistoryAdapter;
+import xyz.filipfloreani.overlapr.adapter.OnHistoryItemClickListener;
 import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
-import xyz.filipfloreani.overlapr.graphing.PAFGraphingActivity;
+import xyz.filipfloreani.overlapr.graphing.GraphingActivity;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
 import xyz.filipfloreani.overlapr.sorting.SortingActivity;
 
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity implements OnHistoryItemClickListener {
 
     public static final String SHARED_PREF_HOME_ACTIVITY = "overlapr.activity.HOME_ACTIVITY";
     public static final String SHARED_PREF_GRAPH_TITLE = "overlapr.prefs.GRAPH_TITLE";
+    public static final String SHARED_PREF_CHART_UUID = "overlapr.prefs.CHART_UUID";
     public static final String EXTRA_PAF_PATH = "overlapr.intent.PAF_PATH";
     private static final int FILE_CODE = 100;
 
@@ -82,7 +84,7 @@ public class HomeActivity extends AppCompatActivity {
 
         if (historyAdapter == null) {
             // Load the adapter for the history recyclerview & set up the layout manager
-            historyAdapter = new HistoryAdapter(chartModelList);
+            historyAdapter = new HistoryAdapter(chartModelList, this);
             LinearLayoutManager layoutManager = new LinearLayoutManager(this);
             historyRecyclerView.setLayoutManager(layoutManager);
             historyRecyclerView.setAdapter(historyAdapter);
@@ -117,6 +119,27 @@ public class HomeActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    /**
+     * Upon a click on one of the items in the history recycler view,
+     * retrieves the chart UUID that is referred to by the clicked view and stores it
+     * into shared preferences. After that, it starts the GraphingActivity through an empty intent.
+     *
+     * @param v The clicked view
+     * @param position Clicked view's position in the list
+     */
+    @Override
+    public void onItemClick(View v, int position) {
+        String chartUuid = chartModelList.get(position).getUuid();
+
+        SharedPreferences sp = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(SHARED_PREF_CHART_UUID, chartUuid);
+        editor.commit();
+
+        Intent i = new Intent(this, GraphingActivity.class);
+        startActivity(i);
     }
 
     private void startSortingActivity() {
@@ -201,7 +224,7 @@ public class HomeActivity extends AppCompatActivity {
             } else {
                 Uri fileUri = data.getData();
 
-                Intent intent = new Intent(this, PAFGraphingActivity.class);
+                Intent intent = new Intent(this, GraphingActivity.class);
                 intent.putExtra(EXTRA_PAF_PATH, fileUri);
                 startActivity(intent);
             }

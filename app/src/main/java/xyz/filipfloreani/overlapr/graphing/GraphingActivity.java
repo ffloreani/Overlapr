@@ -21,13 +21,16 @@ import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.realm.implementation.RealmLineDataSet;
 import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmAsyncTask;
 import io.realm.RealmList;
+import io.realm.RealmResults;
 import xyz.filipfloreani.overlapr.HomeActivity;
 import xyz.filipfloreani.overlapr.R;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
@@ -38,9 +41,9 @@ import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 import static xyz.filipfloreani.overlapr.HomeActivity.EXTRA_PAF_PATH;
 import static xyz.filipfloreani.overlapr.HomeActivity.SHARED_PREF_HOME_ACTIVITY;
 
-public class PAFGraphingActivity extends AppCompatActivity {
+public class GraphingActivity extends AppCompatActivity {
 
-    private static final String TAG = PAFGraphingActivity.class.getSimpleName();
+    private static final String TAG = GraphingActivity.class.getSimpleName();
 
     private Realm realm;
     private RealmAsyncTask writeTransaction = null;
@@ -89,8 +92,15 @@ public class PAFGraphingActivity extends AppCompatActivity {
             }
         });
 
-        // Parse the file at the received path
-        parsePAFFile();
+        String chartUuid = getUUIDFromSharedPrefs();
+        if (chartUuid != null) {
+            // Read points from Realm and show the chart
+            RealmResults<RealmPointModel> chartPoints = getAllPointsForChartUUID(chartUuid);
+            setDataToChart(chartPoints);
+        } else {
+            // Parse the file at the received path and, upon parsing the whole file, show the chart
+            parsePAFFile();
+        }
     }
 
     @Override
@@ -101,6 +111,12 @@ public class PAFGraphingActivity extends AppCompatActivity {
         }
         realm.close();
     }
+
+    private String getUUIDFromSharedPrefs() {
+        SharedPreferences sp = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
+        return sp.getString(HomeActivity.SHARED_PREF_CHART_UUID, null);
+    }
+
 
     /**
      * Gets the title for this graph from the HomeActivity SharedPreferences storage.
@@ -142,29 +158,64 @@ public class PAFGraphingActivity extends AppCompatActivity {
     }
 
     /**
-     * For a given highlight, returns a matching point in the current chart.
-     *
-     * @param highlight The highlight to get a point from
-     * @return RealmPointModel matching the highlighted point
-     */
-    private RealmPointModel getPointFromHighlight(Highlight highlight) {
-        return realm.where(RealmPointModel.class)
-                .equalTo("xCoor", highlight.getX())
-                .equalTo("yCoor", highlight.getY())
-                .equalTo("chart.uuid", chartModel.getUuid()).findFirst();
-    }
-
-    /**
      * Starts a new ParserTask with the received file path
      */
     private void parsePAFFile() {
         new ParserTask(this).execute(filePath);
     }
 
+    public void setDataToChart(RealmResults<RealmPointModel> points) {
+        RealmLineDataSet<RealmPointModel> realmDataSet = new RealmLineDataSet<RealmPointModel>(points, "xCoor", "yCoor");
+
+        // It's ugly, but it works
+        realmDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        realmDataSet.setColor(Color.parseColor("#3C9F40"));
+        realmDataSet.setDrawCircles(false);
+
+        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
+        realmDataSet.setFillDrawable(gradientDrawable);
+        realmDataSet.setDrawFilled(true);
+
+        realmDataSet.setDrawHorizontalHighlightIndicator(false);
+        realmDataSet.setHighLightColor(Color.parseColor("#C62828"));
+
+        configureChart(new LineData(realmDataSet));
+    }
+
     public void setDataToChart(List<Entry> chartEntries) {
         LineDataSet dataSet = createLineDataSet(chartEntries);
-        LineData lineData = new LineData(dataSet);
+        configureChart(new LineData(dataSet));
+        writeChartToRealm(chartEntries);
+//        Feke je super;
+    }
 
+    /**
+     * Takes a list of chart entries from which it creates and configures a line data set.
+     *
+     * @param chartEntries Entries by which to create a line data set
+     * @return Configured line data set populated with the given entries
+     */
+    private LineDataSet createLineDataSet(List<Entry> chartEntries) {
+        LineDataSet dataSet = new LineDataSet(chartEntries, "Matches");
+        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        dataSet.setColor(Color.parseColor("#3C9F40"));
+        dataSet.setDrawCircles(false);
+
+        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
+        dataSet.setFillDrawable(gradientDrawable);
+        dataSet.setDrawFilled(true);
+
+        dataSet.setDrawHorizontalHighlightIndicator(false);
+        dataSet.setHighLightColor(Color.parseColor("#C62828"));
+
+        return dataSet;
+    }
+
+    private void configureDataSet(LineDataSet dataSet) {
+
+    }
+
+    private void configureChart(LineData lineData) {
         // Set up X-axis
         XAxis xAxis = lineChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -183,24 +234,29 @@ public class PAFGraphingActivity extends AppCompatActivity {
 
         isGraphShown = true;
         highlightButton.setVisibility(View.VISIBLE);
-
-        writeChartToRealm(chartEntries);
     }
 
-    private LineDataSet createLineDataSet(List<Entry> chartEntries) {
-        LineDataSet dataSet = new LineDataSet(chartEntries, "Matches");
-        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-        dataSet.setColor(Color.parseColor("#3C9F40"));
-        dataSet.setDrawCircles(false);
+    /**
+     * For a given chart UUID, returns all it's points from Realm.
+     *
+     * @param chartUuid The chart UUID to get a chart points for
+     * @return RealmResults containing all points for the chart with the given UUID
+     */
+    private RealmResults<RealmPointModel> getAllPointsForChartUUID(String chartUuid) {
+        return realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).findAll();
+    }
 
-        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
-        dataSet.setFillDrawable(gradientDrawable);
-        dataSet.setDrawFilled(true);
-
-        dataSet.setDrawHorizontalHighlightIndicator(false);
-        dataSet.setHighLightColor(Color.parseColor("#C62828"));
-
-        return dataSet;
+    /**
+     * For a given highlight, returns a matching point in the current chart.
+     *
+     * @param highlight The highlight to get a point from
+     * @return RealmPointModel matching the highlighted point
+     */
+    private RealmPointModel getPointFromHighlight(Highlight highlight) {
+        return realm.where(RealmPointModel.class)
+                .equalTo("xCoor", highlight.getX())
+                .equalTo("yCoor", highlight.getY())
+                .equalTo("chart.uuid", chartModel.getUuid()).findFirst();
     }
 
     /**
@@ -242,7 +298,7 @@ public class PAFGraphingActivity extends AppCompatActivity {
                     bgRealm.copyToRealmOrUpdate(highlightsModel);
 
                     Log.d(TAG, "Highlights successfully copied to Realm!");
-                    Toast.makeText(PAFGraphingActivity.this, "Highlighting complete!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(GraphingActivity.this, "Highlighting complete!", Toast.LENGTH_SHORT).show();
                 }
             });
         }
