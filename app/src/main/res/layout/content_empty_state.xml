@@ -3,27 +3,27 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/dna_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:src="@drawable/dna"
-        android:layout_marginLeft="100dp"
-        android:layout_marginRight="100dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
-
     <TextView
         android:id="@+id/empty_state_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/empty_state_head"
         android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
         android:textSize="19sp"
         android:textStyle="bold"
-        android:layout_marginBottom="15dp"
-        android:layout_below="@id/dna_image"/>
+        android:layout_marginBottom="15dp"/>
+
+    <ImageView
+        android:id="@+id/dna_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/dna"
+        android:layout_marginTop="100dp"
+        android:layout_marginLeft="100dp"
+        android:layout_marginRight="100dp"
+        android:layout_above="@id/empty_state_header"
+        android:layout_centerHorizontal="true" />
 
     <TextView
         android:layout_width="wrap_content"
