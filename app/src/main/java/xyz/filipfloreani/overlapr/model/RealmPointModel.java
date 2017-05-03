@@ -6,7 +6,7 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 /**
- * A Realm model of a single point of a chart, containing it's the x and y coordinates.
+ * A Realm model of a single point of a chart, containing it's x and y coordinates.
  * <p>
  * Created by filipfloreani on 01/05/2017.
  */
