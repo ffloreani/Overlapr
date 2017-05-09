@@ -57,7 +57,7 @@ public class GraphingActivity extends AppCompatActivity {
     private boolean isGraphShown = false;
     private String graphTitle;
 
-    private RealmChartModel chartModel = null;
+    private String chartUuid = null;
     private RealmHighlightsModel highlightsModel = new RealmHighlightsModel();
     private boolean wasStartMarked = false;
 
@@ -92,7 +92,7 @@ public class GraphingActivity extends AppCompatActivity {
             }
         });
 
-        String chartUuid = getUUIDFromSharedPrefs();
+        chartUuid = getUUIDFromSharedPrefs();
         if (chartUuid != null) {
             // Read points from Realm and show the chart
             RealmResults<RealmPointModel> chartPoints = getAllPointsForChartUUID(chartUuid);
@@ -165,7 +165,7 @@ public class GraphingActivity extends AppCompatActivity {
     }
 
     public void setDataToChart(RealmResults<RealmPointModel> points) {
-        RealmLineDataSet<RealmPointModel> realmDataSet = new RealmLineDataSet<RealmPointModel>(points, "xCoor", "yCoor");
+        RealmLineDataSet<RealmPointModel> realmDataSet = new RealmLineDataSet<>(points, "xCoor", "yCoor");
 
         // It's ugly, but it works
         realmDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
@@ -211,10 +211,6 @@ public class GraphingActivity extends AppCompatActivity {
         return dataSet;
     }
 
-    private void configureDataSet(LineDataSet dataSet) {
-
-    }
-
     private void configureChart(LineData lineData) {
         // Set up X-axis
         XAxis xAxis = lineChart.getXAxis();
@@ -256,7 +252,7 @@ public class GraphingActivity extends AppCompatActivity {
         return realm.where(RealmPointModel.class)
                 .equalTo("xCoor", highlight.getX())
                 .equalTo("yCoor", highlight.getY())
-                .equalTo("chart.uuid", chartModel.getUuid()).findFirst();
+                .equalTo("chart.uuid", chartUuid).findFirst();
     }
 
     /**
@@ -268,7 +264,7 @@ public class GraphingActivity extends AppCompatActivity {
         writeTransaction = realm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
-                chartModel = new RealmChartModel(graphTitle, GeneralUtils.getUTCNow());
+                RealmChartModel chartModel = new RealmChartModel(graphTitle, GeneralUtils.getUTCNow());
                 RealmList<RealmPointModel> pointModels = GeneralUtils.entriesToChartPoints(dataSet, chartModel);
 
                 chartModel.setPoints(pointModels);

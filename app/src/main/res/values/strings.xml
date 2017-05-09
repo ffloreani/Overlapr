@@ -2,10 +2,11 @@
     <string name="app_name">Overlapr</string>
     <string name="action_settings">Settings</string>
     <string name="highlight">Highlight</string>
-    <string name="empty_state_head">You don\'t have any scans yet</string>
+    <string name="empty_state_head">You don\'t have any scans yet (OMG)</string>
     <string name="empty_state_desc">Press the button bellow to change that!</string>
     <string name="graph_title">Overlap graph</string>
     <string name="graph_sorting">Graph sorting</string>
     <string name="sorting">Sorting</string>
     <string name="selection">Selection</string>
+    <string name="clear_history">Clear history</string>
 </resources>

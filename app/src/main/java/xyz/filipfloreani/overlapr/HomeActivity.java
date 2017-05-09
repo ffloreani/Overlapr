@@ -28,7 +28,10 @@ import xyz.filipfloreani.overlapr.adapter.OnHistoryItemClickListener;
 import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
 import xyz.filipfloreani.overlapr.graphing.GraphingActivity;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
+import xyz.filipfloreani.overlapr.model.RealmHighlightsModel;
+import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.sorting.SortingActivity;
+import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 
 public class HomeActivity extends AppCompatActivity implements OnHistoryItemClickListener {
 
@@ -116,6 +119,9 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
             case R.id.selection_item:
                 displayNameDialog();
                 return true;
+            case R.id.clear_history_item:
+                clearHistory();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -126,7 +132,7 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
      * retrieves the chart UUID that is referred to by the clicked view and stores it
      * into shared preferences. After that, it starts the GraphingActivity through an empty intent.
      *
-     * @param v The clicked view
+     * @param v        The clicked view
      * @param position Clicked view's position in the list
      */
     @Override
@@ -145,6 +151,35 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
     private void startSortingActivity() {
         Intent i = new Intent(this, SortingActivity.class);
         startActivity(i);
+    }
+
+    private void clearHistory() {
+        AlertDialog.Builder adBuilder = GeneralUtils.buildWatchOutDialog(this);
+        adBuilder
+                .setMessage("Are you sure you want to delete all chart history?")
+                .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                })
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        final RealmResults<RealmChartModel> charts = realm.where(RealmChartModel.class).findAll();
+                        final RealmResults<RealmHighlightsModel> highlights = realm.where(RealmHighlightsModel.class).findAll();
+                        final RealmResults<RealmPointModel> points = realm.where(RealmPointModel.class).findAll();
+
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                highlights.deleteAllFromRealm();
+                                points.deleteAllFromRealm();
+                                charts.deleteAllFromRealm();
+                            }
+                        });
+                    }
+                }).show();
     }
 
     private void loadData() {
