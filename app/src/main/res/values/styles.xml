@@ -37,4 +37,8 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="SwipeStyle">
+        <item name="swipe_rotation">15</item>
+    </style>
+
 </resources>
