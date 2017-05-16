@@ -6,9 +6,10 @@ import java.util.UUID;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
+import xyz.filipfloreani.overlapr.sorting.SortingOptions;
 
 /**
- * Realm model of a single chart. Contains a title, creation date and a list of point objects.
+ * Realm model of a single chart. Contains a title, creation date, a list of point objects and a sorting option.
  * <p>
  * Created by filipfloreani on 03/04/2017.
  */
@@ -19,6 +20,7 @@ public class RealmChartModel extends RealmObject {
     private String title;
     private Date creationDate;
     private RealmList<RealmPointModel> points;
+    private SortingOptions sortingOption = SortingOptions.UNSORTED;
 
     public RealmChartModel() {
     }
@@ -32,6 +34,13 @@ public class RealmChartModel extends RealmObject {
         this.title = title;
         this.creationDate = creationDate;
         this.points = points;
+    }
+
+    public RealmChartModel(String title, Date creationDate, RealmList<RealmPointModel> points, SortingOptions sortingOption) {
+        this.title = title;
+        this.creationDate = creationDate;
+        this.points = points;
+        this.sortingOption = sortingOption;
     }
 
     public String getUuid() {
@@ -69,5 +78,13 @@ public class RealmChartModel extends RealmObject {
     public void addPoint(RealmPointModel point) {
         if (points == null) points = new RealmList<>();
         points.add(point);
+    }
+
+    public SortingOptions getSortingOption() {
+        return sortingOption;
+    }
+
+    public void setSortingOption(SortingOptions sortingOption) {
+        this.sortingOption = sortingOption;
     }
 }

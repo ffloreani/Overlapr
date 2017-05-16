@@ -5,4 +5,9 @@ package xyz.filipfloreani.overlapr.sorting;
  */
 
 public enum SortingOptions {
+    REGULAR,
+    CHYMERIC,
+    REPEAT,
+    LOW_QUALITY,
+    UNSORTED
 }
