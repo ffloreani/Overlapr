@@ -9,4 +9,5 @@
     <string name="sorting">Sorting</string>
     <string name="selection">Selection</string>
     <string name="clear_history">Clear history</string>
+    <string name="load_charts">Load charts</string>
 </resources>

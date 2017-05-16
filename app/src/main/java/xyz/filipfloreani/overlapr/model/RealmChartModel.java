@@ -65,4 +65,9 @@ public class RealmChartModel extends RealmObject {
     public void setPoints(RealmList<RealmPointModel> points) {
         this.points = points;
     }
+
+    public void addPoint(RealmPointModel point) {
+        if (points == null) points = new RealmList<>();
+        points.add(point);
+    }
 }
