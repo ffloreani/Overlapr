@@ -34,6 +34,7 @@ import xyz.filipfloreani.overlapr.model.RealmHighlightsModel;
 import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.sorting.SortingActivity;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
+import xyz.filipfloreani.overlapr.utils.SaveDataTask;
 
 public class HomeActivity extends AppCompatActivity implements OnHistoryItemClickListener {
 
@@ -137,6 +138,9 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
             case R.id.load_charts_item:
                 startFilePicker(CHARTS_CODE);
                 return true;
+            case R.id.save_highlights_item:
+                saveHighlightsToFile();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -227,6 +231,10 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
                         });
                     }
                 }).show();
+    }
+
+    private void saveHighlightsToFile() {
+        new SaveDataTask(this).execute();
     }
 
     private void loadData() {

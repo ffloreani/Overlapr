@@ -19,4 +19,9 @@
         android:id="@+id/load_charts_item"
         android:title="@string/load_charts"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/save_highlights_item"
+        android:title="@string/save_highlights"
+        app:showAsAction="never"/>
 </menu>

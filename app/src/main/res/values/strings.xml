@@ -10,4 +10,5 @@
     <string name="selection">Selection</string>
     <string name="clear_history">Clear history</string>
     <string name="load_charts">Load charts</string>
+    <string name="save_highlights">Save highlights</string>
 </resources>
