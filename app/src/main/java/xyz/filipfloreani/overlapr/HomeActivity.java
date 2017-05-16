@@ -1,7 +1,6 @@
 package xyz.filipfloreani.overlapr;
 
 import android.app.Activity;
-import android.content.ClipData;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,26 +19,28 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 import xyz.filipfloreani.overlapr.adapter.HistoryAdapter;
 import xyz.filipfloreani.overlapr.adapter.OnHistoryItemClickListener;
 import xyz.filipfloreani.overlapr.filepicker.FilePickerActivity;
+import xyz.filipfloreani.overlapr.graphing.ChartsParserTask;
 import xyz.filipfloreani.overlapr.graphing.GraphingActivity;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
 import xyz.filipfloreani.overlapr.model.RealmHighlightsModel;
 import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.sorting.SortingActivity;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
+import xyz.filipfloreani.overlapr.utils.SaveDataTask;
 
 public class HomeActivity extends AppCompatActivity implements OnHistoryItemClickListener {
 
     public static final String SHARED_PREF_HOME_ACTIVITY = "overlapr.activity.HOME_ACTIVITY";
-    public static final String SHARED_PREF_GRAPH_TITLE = "overlapr.prefs.GRAPH_TITLE";
     public static final String SHARED_PREF_CHART_UUID = "overlapr.prefs.CHART_UUID";
-    public static final String EXTRA_PAF_PATH = "overlapr.intent.PAF_PATH";
-    private static final int FILE_CODE = 100;
+    private static final int CHARTS_CODE = 200;
 
     FloatingActionButton fab;
     RelativeLayout emptyStateLayout;
@@ -63,7 +64,7 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                displayNameDialog();
+                startFilePicker(CHARTS_CODE);
             }
         });
 
@@ -72,6 +73,21 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
         historyRecyclerView = (RecyclerView) findViewById(R.id.rvHistory);
 
         loadData();
+
+        chartModelList.addChangeListener(new RealmChangeListener<RealmResults<RealmChartModel>>() {
+            @Override
+            public void onChange(RealmResults<RealmChartModel> element) {
+                historyAdapter.notifyDataSetChanged();
+
+                if (chartModelList == null || chartModelList.size() == 0) {
+                    historyRecyclerView.setVisibility(View.GONE);
+                    emptyStateLayout.setVisibility(View.VISIBLE);
+                } else {
+                    historyRecyclerView.setVisibility(View.VISIBLE);
+                    emptyStateLayout.setVisibility(View.GONE);
+                }
+            }
+        });
     }
 
     @Override
@@ -116,11 +132,14 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
             case R.id.sorting_item:
                 startSortingActivity();
                 return true;
-            case R.id.selection_item:
-                displayNameDialog();
-                return true;
             case R.id.clear_history_item:
                 clearHistory();
+                return true;
+            case R.id.load_charts_item:
+                startFilePicker(CHARTS_CODE);
+                return true;
+            case R.id.save_highlights_item:
+                saveHighlightsToFile();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -146,6 +165,38 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
 
         Intent i = new Intent(this, GraphingActivity.class);
         startActivity(i);
+    }
+
+    @Override
+    public boolean onItemLongClick(View v, final RealmChartModel chartModel) {
+        final EditText editText = new EditText(this);
+        editText.setPadding(16, 8, 8, 16);
+
+        AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
+        adBuilder
+                .setTitle("Rename chart '" + chartModel.getTitle() + "'")
+                .setView(editText)
+                .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                })
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newTitle = editText.getText().toString();
+
+                        realm.beginTransaction();
+                        chartModel.setTitle(newTitle);
+                        realm.commitTransaction();
+
+                        Toast.makeText(HomeActivity.this, "Name change complete", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
+
+        return true;
     }
 
     private void startSortingActivity() {
@@ -182,51 +233,18 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
                 }).show();
     }
 
+    private void saveHighlightsToFile() {
+        new SaveDataTask(this).execute();
+    }
+
     private void loadData() {
         chartModelList = realm.where(RealmChartModel.class).findAll();
     }
 
     /**
-     * Creates a new AlertDialog containing a text input field. When the positive button is pressed,
-     * the entered string is saved to SharedPreferences with the HomeActivity key. After that, the
-     * {@code startFilePicker()} method is called.
-     */
-    private void displayNameDialog() {
-        AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
-
-        //View inflatedView = LayoutInflater.from(this).inflate(R.layout.dialog_title, (ViewGroup) findViewById(android.R.id.content), false);
-        final EditText inputTextView = new EditText(this);
-        inputTextView.setPadding(16, 16, 16, 16);
-
-        adBuilder.setTitle("New graph")
-                .setMessage("Title")
-                .setView(inputTextView)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        String title = inputTextView.getText().toString();
-
-                        SharedPreferences preferences = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putString(SHARED_PREF_GRAPH_TITLE, title);
-                        editor.commit();
-
-                        startFilePicker();
-                    }
-                }).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-        adBuilder.show();
-    }
-
-    /**
      * Starts the FilePicker activity.
      */
-    private void startFilePicker() {
+    private void startFilePicker(int code) {
         Intent i = new Intent(this, FilePickerActivity.class);
 
         i.putExtra(FilePickerActivity.EXTRA_ALLOW_MULTIPLE, false);
@@ -234,7 +252,7 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
         i.putExtra(FilePickerActivity.EXTRA_MODE, FilePickerActivity.MODE_FILE);
         i.putExtra(FilePickerActivity.EXTRA_START_PATH, Environment.getExternalStorageDirectory().getPath());
 
-        startActivityForResult(i, FILE_CODE);
+        startActivityForResult(i, code);
     }
 
     /**
@@ -246,23 +264,10 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == FILE_CODE && resultCode == Activity.RESULT_OK) {
-            // TODO: Simplify this and remove the option to select multiple files
-            if (data.getBooleanExtra(FilePickerActivity.EXTRA_ALLOW_MULTIPLE, false)) {
-                ClipData clip = data.getClipData();
+        if (requestCode == CHARTS_CODE && resultCode == Activity.RESULT_OK) {
+            Uri fileUri = data.getData();
 
-                if (clip != null) {
-                    for (int i = 0; i < clip.getItemCount(); i++) {
-                        Uri uri = clip.getItemAt(i).getUri();
-                    }
-                }
-            } else {
-                Uri fileUri = data.getData();
-
-                Intent intent = new Intent(this, GraphingActivity.class);
-                intent.putExtra(EXTRA_PAF_PATH, fileUri);
-                startActivity(intent);
-            }
+            new ChartsParserTask(this).execute(fileUri);
         }
     }
 }

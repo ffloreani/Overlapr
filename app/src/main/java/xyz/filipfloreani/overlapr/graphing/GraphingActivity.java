@@ -3,7 +3,6 @@ package xyz.filipfloreani.overlapr.graphing;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -18,18 +17,12 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.realm.implementation.RealmLineDataSet;
 import com.github.mikephil.charting.highlight.Highlight;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-
-import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmAsyncTask;
-import io.realm.RealmList;
 import io.realm.RealmResults;
 import xyz.filipfloreani.overlapr.HomeActivity;
 import xyz.filipfloreani.overlapr.R;
@@ -38,7 +31,6 @@ import xyz.filipfloreani.overlapr.model.RealmHighlightsModel;
 import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 
-import static xyz.filipfloreani.overlapr.HomeActivity.EXTRA_PAF_PATH;
 import static xyz.filipfloreani.overlapr.HomeActivity.SHARED_PREF_HOME_ACTIVITY;
 
 public class GraphingActivity extends AppCompatActivity {
@@ -53,9 +45,7 @@ public class GraphingActivity extends AppCompatActivity {
     private TextView startPointTextView;
     private TextView endPointTextView;
 
-    private Uri filePath;
     private boolean isGraphShown = false;
-    private String graphTitle;
 
     private String chartUuid = null;
     private RealmHighlightsModel highlightsModel = new RealmHighlightsModel();
@@ -68,9 +58,6 @@ public class GraphingActivity extends AppCompatActivity {
 
         realm = Realm.getDefaultInstance();
 
-        getGraphTitle();
-        setTitle(graphTitle);
-
         // Line chart view
         lineChart = (LineChart) findViewById(R.id.chart);
         lineChart.setHardwareAccelerationEnabled(true);
@@ -81,9 +68,6 @@ public class GraphingActivity extends AppCompatActivity {
         startPointTextView = (TextView) findViewById(R.id.start_point_value);
         endPointTextView = (TextView) findViewById(R.id.end_point_value);
 
-        // Read PAF path from intent
-        filePath = getIntent().getParcelableExtra(EXTRA_PAF_PATH);
-
         highlightButton.setVisibility(View.GONE);
         highlightButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -93,13 +77,11 @@ public class GraphingActivity extends AppCompatActivity {
         });
 
         chartUuid = getUUIDFromSharedPrefs();
+        setTitle(getChartTitle(chartUuid));
         if (chartUuid != null) {
             // Read points from Realm and show the chart
             RealmResults<RealmPointModel> chartPoints = getAllPointsForChartUUID(chartUuid);
             setDataToChart(chartPoints);
-        } else {
-            // Parse the file at the received path and, upon parsing the whole file, show the chart
-            parsePAFFile();
         }
     }
 
@@ -115,15 +97,6 @@ public class GraphingActivity extends AppCompatActivity {
     private String getUUIDFromSharedPrefs() {
         SharedPreferences sp = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
         return sp.getString(HomeActivity.SHARED_PREF_CHART_UUID, null);
-    }
-
-
-    /**
-     * Gets the title for this graph from the HomeActivity SharedPreferences storage.
-     */
-    private void getGraphTitle() {
-        SharedPreferences preferences = getSharedPreferences(SHARED_PREF_HOME_ACTIVITY, MODE_PRIVATE);
-        graphTitle = preferences.getString(HomeActivity.SHARED_PREF_GRAPH_TITLE, "Overlapr graph " + GeneralUtils.getUTCNow());
     }
 
     private void showHighlightValue() {
@@ -157,13 +130,6 @@ public class GraphingActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Starts a new ParserTask with the received file path
-     */
-    private void parsePAFFile() {
-        new ParserTask(this).execute(filePath);
-    }
-
     public void setDataToChart(RealmResults<RealmPointModel> points) {
         RealmLineDataSet<RealmPointModel> realmDataSet = new RealmLineDataSet<>(points, "xCoor", "yCoor");
 
@@ -180,35 +146,6 @@ public class GraphingActivity extends AppCompatActivity {
         realmDataSet.setHighLightColor(Color.parseColor("#C62828"));
 
         configureChart(new LineData(realmDataSet));
-    }
-
-    public void setDataToChart(List<Entry> chartEntries) {
-        LineDataSet dataSet = createLineDataSet(chartEntries);
-        configureChart(new LineData(dataSet));
-        writeChartToRealm(chartEntries);
-//        Feke je super;
-    }
-
-    /**
-     * Takes a list of chart entries from which it creates and configures a line data set.
-     *
-     * @param chartEntries Entries by which to create a line data set
-     * @return Configured line data set populated with the given entries
-     */
-    private LineDataSet createLineDataSet(List<Entry> chartEntries) {
-        LineDataSet dataSet = new LineDataSet(chartEntries, "Matches");
-        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-        dataSet.setColor(Color.parseColor("#3C9F40"));
-        dataSet.setDrawCircles(false);
-
-        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
-        dataSet.setFillDrawable(gradientDrawable);
-        dataSet.setDrawFilled(true);
-
-        dataSet.setDrawHorizontalHighlightIndicator(false);
-        dataSet.setHighLightColor(Color.parseColor("#C62828"));
-
-        return dataSet;
     }
 
     private void configureChart(LineData lineData) {
@@ -232,6 +169,10 @@ public class GraphingActivity extends AppCompatActivity {
         highlightButton.setVisibility(View.VISIBLE);
     }
 
+    private String getChartTitle(String chartUuid) {
+        return realm.where(RealmChartModel.class).equalTo("uuid", chartUuid).findFirst().getTitle();
+    }
+
     /**
      * For a given chart UUID, returns all it's points from Realm.
      *
@@ -253,36 +194,6 @@ public class GraphingActivity extends AppCompatActivity {
                 .equalTo("xCoor", highlight.getX())
                 .equalTo("yCoor", highlight.getY())
                 .equalTo("chart.uuid", chartUuid).findFirst();
-    }
-
-    /**
-     * Write the given dataset into the Realm DB.
-     *
-     * @param dataSet The dataset to be written to the database
-     */
-    private void writeChartToRealm(final List<Entry> dataSet) {
-        writeTransaction = realm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                RealmChartModel chartModel = new RealmChartModel(graphTitle, GeneralUtils.getUTCNow());
-                RealmList<RealmPointModel> pointModels = GeneralUtils.entriesToChartPoints(dataSet, chartModel);
-
-                chartModel.setPoints(pointModels);
-
-                realm.copyToRealm(pointModels);
-            }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "Chart successfully copied to Realm!");
-            }
-        }, new Realm.Transaction.OnError() {
-            @Override
-            public void onError(Throwable error) {
-                Log.d(TAG, "Chart copying failed.");
-                error.printStackTrace();
-            }
-        });
     }
 
     private void writeHighlightsToRealm() {
