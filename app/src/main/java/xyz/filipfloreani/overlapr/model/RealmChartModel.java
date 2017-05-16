@@ -20,7 +20,7 @@ public class RealmChartModel extends RealmObject {
     private String title;
     private Date creationDate;
     private RealmList<RealmPointModel> points;
-    private SortingOptions sortingOption = SortingOptions.UNSORTED;
+    private int sortingOption = SortingOptions.UNSORTED.ordinal();
 
     public RealmChartModel() {
     }
@@ -40,7 +40,7 @@ public class RealmChartModel extends RealmObject {
         this.title = title;
         this.creationDate = creationDate;
         this.points = points;
-        this.sortingOption = sortingOption;
+        this.sortingOption = sortingOption.ordinal();
     }
 
     public String getUuid() {
@@ -81,10 +81,10 @@ public class RealmChartModel extends RealmObject {
     }
 
     public SortingOptions getSortingOption() {
-        return sortingOption;
+        return SortingOptions.get(sortingOption);
     }
 
     public void setSortingOption(SortingOptions sortingOption) {
-        this.sortingOption = sortingOption;
+        this.sortingOption = sortingOption.ordinal();
     }
 }

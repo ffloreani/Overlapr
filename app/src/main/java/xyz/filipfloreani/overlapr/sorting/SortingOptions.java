@@ -9,5 +9,21 @@ public enum SortingOptions {
     CHYMERIC,
     REPEAT,
     LOW_QUALITY,
-    UNSORTED
+    UNSORTED;
+
+    public static SortingOptions get(int position) {
+        switch (position) {
+            case 0:
+                return REGULAR;
+            case 1:
+                return CHYMERIC;
+            case 2:
+                return REPEAT;
+            case 3:
+                return LOW_QUALITY;
+            case 4:
+            default:
+                return UNSORTED;
+        }
+    }
 }
