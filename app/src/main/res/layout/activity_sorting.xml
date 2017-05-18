@@ -9,8 +9,8 @@
         android:id="@+id/swipe_adapter_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:max_visible="4"
-        app:min_adapter_stack="4"
+        app:max_visible="2"
+        app:min_adapter_stack="2"
         app:rotation_degrees="15.5"
         tools:context=".sorting.SortingActivity" />
 </LinearLayout>
