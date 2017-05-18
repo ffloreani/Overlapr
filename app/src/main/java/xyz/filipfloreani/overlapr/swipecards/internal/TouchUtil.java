@@ -1,7 +1,5 @@
 package xyz.filipfloreani.overlapr.swipecards.internal;
 
-import android.graphics.PointF;
-
 import static java.lang.Math.abs;
 
 /**

@@ -4,23 +4,28 @@ import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
-
-import com.lorentzos.flingswipe.SwipeFlingAdapterView;
 
 import java.util.List;
 
 import io.realm.Realm;
 import xyz.filipfloreani.overlapr.R;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
+import xyz.filipfloreani.overlapr.swipecards.OnExitListener;
+import xyz.filipfloreani.overlapr.swipecards.SwipeAdapterView;
+import xyz.filipfloreani.overlapr.swipecards.internal.Direction;
 
-public class SortingActivity extends AppCompatActivity implements SwipeFlingAdapterView.onFlingListener {
+import static xyz.filipfloreani.overlapr.swipecards.internal.Direction.DOWN;
+import static xyz.filipfloreani.overlapr.swipecards.internal.Direction.LEFT;
+import static xyz.filipfloreani.overlapr.swipecards.internal.Direction.RIGHT;
+import static xyz.filipfloreani.overlapr.swipecards.internal.Direction.UP;
+
+public class SortingActivity extends AppCompatActivity implements OnExitListener {
 
     private Realm realm;
     private List<RealmChartModel> charts;
 
-    private SwipeFlingAdapterView flingContainer;
+    private SwipeAdapterView flingContainer;
     private SortingAdapter sortingAdapter;
 
     @Override
@@ -30,12 +35,13 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
 
         realm = Realm.getDefaultInstance();
 
-        flingContainer = (SwipeFlingAdapterView) findViewById(R.id.swipe_adapter_view);
+        flingContainer = (SwipeAdapterView) findViewById(R.id.swipe_adapter_view);
 
-        // TODO Load chart objects from Realm
         charts = loadCharts();
         sortingAdapter = new SortingAdapter(this, charts, realm);
-        flingContainer.init(this, sortingAdapter);
+
+        flingContainer.setOnExitListener(this);
+        flingContainer.setAdapter(sortingAdapter);
     }
 
     @Override
@@ -54,12 +60,24 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
     }
 
     @Override
-    public void removeFirstObjectInAdapter() {
-    }
+    public void onExit(View view, @Direction int direction) {
+        String snackMessage = "Marked as ";
+        switch (direction) {
+            case LEFT:
+                snackMessage += "chimeric";
+                break;
+            case RIGHT:
+                snackMessage += "repeat";
+                break;
+            case UP:
+                snackMessage += "low quality";
+                break;
+            case DOWN:
+                snackMessage += "regular";
+                break;
+        }
 
-    @Override
-    public void onLeftCardExit(final Object o) {
-        Snackbar.make(flingContainer, "Marked as repeat", Snackbar.LENGTH_SHORT)
+        Snackbar.make(flingContainer, snackMessage, Snackbar.LENGTH_SHORT)
                 .setAction("Undo", new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -69,24 +87,4 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
                 .show();
     }
 
-    @Override
-    public void onRightCardExit(final Object o) {
-        Snackbar.make(flingContainer, "Marked as chimeric", Snackbar.LENGTH_SHORT)
-                .setAction("Undo", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                    }
-                })
-                .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                .show();
-    }
-
-    @Override
-    public void onAdapterAboutToEmpty(int i) {
-        Log.d(getLocalClassName(), "Adapter about to empty!");
-    }
-
-    @Override
-    public void onScroll(float v) {
-    }
 }

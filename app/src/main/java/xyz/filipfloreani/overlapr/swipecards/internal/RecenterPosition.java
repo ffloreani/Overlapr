@@ -1,6 +1,5 @@
 package xyz.filipfloreani.overlapr.swipecards.internal;
 
-import android.graphics.PointF;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 

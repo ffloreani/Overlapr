@@ -2,7 +2,6 @@ package xyz.filipfloreani.overlapr.swipecards.internal;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.graphics.PointF;
 import android.view.MotionEvent;
 import android.view.View;
 
