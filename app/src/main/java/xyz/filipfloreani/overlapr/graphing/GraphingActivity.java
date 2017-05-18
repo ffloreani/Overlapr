@@ -21,6 +21,8 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.realm.implementation.RealmLineDataSet;
 import com.github.mikephil.charting.highlight.Highlight;
 
+import java.util.UUID;
+
 import io.realm.Realm;
 import io.realm.RealmAsyncTask;
 import io.realm.RealmResults;
@@ -48,8 +50,12 @@ public class GraphingActivity extends AppCompatActivity {
     private boolean isGraphShown = false;
 
     private String chartUuid = null;
-    private RealmHighlightsModel highlightsModel = new RealmHighlightsModel();
     private boolean wasStartMarked = false;
+
+    private float startX;
+    private float startY;
+    private float endX;
+    private float endY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,31 +108,34 @@ public class GraphingActivity extends AppCompatActivity {
     private void showHighlightValue() {
         if (!isGraphShown) {
             AlertDialog.Builder builder = GeneralUtils.buildWatchOutDialog(this);
-            builder.setMessage("You must have a graph drawn in order to highlight a value.").show();
+            builder.setMessage(R.string.no_graph_error).show();
             return;
         }
 
         Highlight[] highlighted = lineChart.getHighlighted();
+
         if (highlighted != null && highlighted.length > 0) {
             if (!wasStartMarked) {
                 // Remember the starting point
-                RealmPointModel startPoint = getPointFromHighlight(highlighted[0]);
-                highlightsModel.setStartPoint(startPoint);
+                startX = highlighted[0].getX();
+                startY = highlighted[0].getY();
+
                 wasStartMarked = true;
 
-                startPointTextView.setText("Start: (" + startPoint.getxCoor() + ", " + startPoint.getyCoor() + ")");
+                startPointTextView.setText("Start: (" + startX + ", " + startY + ")");
             } else {
                 // Remember the end point & insert/update the model into Realm
-                RealmPointModel endPoint = getPointFromHighlight(highlighted[0]);
-                highlightsModel.setEndPoint(endPoint);
+                endX = highlighted[0].getX();
+                endY = highlighted[0].getY();
+
                 wasStartMarked = false;
 
-                endPointTextView.setText("End: (" + endPoint.getxCoor() + ", " + endPoint.getyCoor() + ")");
+                endPointTextView.setText("End: (" + endX + ", " + endY + ")");
 
-                writeHighlightsToRealm();
+                writeHighlightsToRealm(startX, startY, endX, endY);
             }
         } else {
-            Toast.makeText(this, "Position the highlighter first!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.position_highlighter, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -159,7 +168,7 @@ public class GraphingActivity extends AppCompatActivity {
 
         // Set up description
         Description desc = new Description();
-        desc.setText("Overlaping reads");
+        desc.setText(getString(R.string.overlap_reads));
         lineChart.setDescription(desc);
 
         lineChart.setData(lineData);
@@ -183,31 +192,51 @@ public class GraphingActivity extends AppCompatActivity {
         return realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).findAll();
     }
 
-    /**
-     * For a given highlight, returns a matching point in the current chart.
-     *
-     * @param highlight The highlight to get a point from
-     * @return RealmPointModel matching the highlighted point
-     */
-    private RealmPointModel getPointFromHighlight(Highlight highlight) {
-        return realm.where(RealmPointModel.class)
-                .equalTo("xCoor", highlight.getX())
-                .equalTo("yCoor", highlight.getY())
-                .equalTo("chart.uuid", chartUuid).findFirst();
-    }
+    private void writeHighlightsToRealm(final float startX, final float startY, final float endX, final float endY) {
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm bgRealm) {
+                RealmHighlightsModel highlightsModel = bgRealm.where(RealmHighlightsModel.class)
+                        .equalTo("parentChart.uuid", chartUuid)
+                        .findFirst();
 
-    private void writeHighlightsToRealm() {
-        if (highlightsModel != null) {
-            realm.executeTransaction(new Realm.Transaction() {
-                @Override
-                public void execute(Realm bgRealm) {
-                    // TODO Look this over, it's creating multiple charts when changing highlights for a single chart
+                RealmPointModel startPoint = bgRealm.where(RealmPointModel.class)
+                        .equalTo("xCoor", startX)
+                        .equalTo("yCoor", startY)
+                        .equalTo("chart.uuid", chartUuid).findFirst();
+
+                RealmPointModel endPoint = bgRealm.where(RealmPointModel.class)
+                        .equalTo("xCoor", endX)
+                        .equalTo("yCoor", endY)
+                        .equalTo("chart.uuid", chartUuid).findFirst();
+
+                RealmChartModel parentChart = bgRealm.where(RealmChartModel.class)
+                        .equalTo("uuid", chartUuid)
+                        .findFirst();
+
+                if (highlightsModel != null) {
+                    highlightsModel.setStartPoint(startPoint);
+                    highlightsModel.setEndPoint(endPoint);
                     bgRealm.copyToRealmOrUpdate(highlightsModel);
-
-                    Log.d(TAG, "Highlights successfully copied to Realm!");
-                    Toast.makeText(GraphingActivity.this, "Highlighting complete!", Toast.LENGTH_SHORT).show();
+                } else {
+                    highlightsModel = bgRealm.createObject(RealmHighlightsModel.class, UUID.randomUUID().toString());
+                    highlightsModel.setStartPoint(startPoint);
+                    highlightsModel.setEndPoint(endPoint);
+                    highlightsModel.setParentChart(parentChart);
                 }
-            });
-        }
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Highlights successfully copied to Realm!");
+                Toast.makeText(GraphingActivity.this, R.string.highlight_complete, Toast.LENGTH_SHORT).show();
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(TAG, "Failed to copy highlight to realm");
+                Toast.makeText(GraphingActivity.this, R.string.highlight_error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

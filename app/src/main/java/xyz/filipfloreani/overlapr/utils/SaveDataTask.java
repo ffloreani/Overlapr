@@ -76,6 +76,8 @@ public class SaveDataTask extends AsyncTask<Void, Void, Void> {
      * @throws IOException Thrown in case of BufferedReader failure
      */
     private void writeHighlightsToFile(RealmResults<RealmHighlightsModel> highlights) throws IOException {
+        if (highlights.isEmpty()) return;
+
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             return;
         }
@@ -90,18 +92,18 @@ public class SaveDataTask extends AsyncTask<Void, Void, Void> {
             return;
         }
 
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile)));
+        try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile)))) {
+            for (RealmHighlightsModel highlight : highlights) {
+                String chartUuid = highlight.getStartPoint().getChart().getUuid();
+                String chartTitle = highlight.getStartPoint().getChart().getTitle();
+                String startPoint = "(" + highlight.getStartPoint().getxCoor() + ", " + highlight.getStartPoint().getyCoor() + ")";
+                String endPoint = "(" + highlight.getEndPoint().getxCoor() + ", " + highlight.getEndPoint().getyCoor() + ")";
 
-        for (RealmHighlightsModel highlight : highlights) {
-            String chartUuid = highlight.getStartPoint().getChart().getUuid();
-            String chartTitle = highlight.getStartPoint().getChart().getTitle();
-            String startPoint = "(" + highlight.getStartPoint().getxCoor() + ", " + highlight.getStartPoint().getyCoor() + ")";
-            String endPoint = "(" + highlight.getEndPoint().getxCoor() + ", " + highlight.getEndPoint().getyCoor() + ")";
+                bw.write(chartUuid + " " + chartTitle + " " + startPoint + " " + endPoint);
+                bw.newLine();
+            }
 
-            bw.write(chartUuid + " " + chartTitle + " " + startPoint + " " + endPoint);
-            bw.newLine();
+            bw.flush();
         }
-
-        bw.flush();
     }
 }
