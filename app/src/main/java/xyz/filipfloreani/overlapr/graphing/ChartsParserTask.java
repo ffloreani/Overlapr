@@ -1,6 +1,7 @@
 package xyz.filipfloreani.overlapr.graphing;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -37,6 +38,19 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
         super.onPreExecute();
         dialog.setMessage("Parsing charts to Realm...");
         dialog.setIndeterminate(true);
+        dialog.setCancelable(true);
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                ChartsParserTask.this.cancel(true);
+            }
+        });
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                ChartsParserTask.this.cancel(true);
+            }
+        });
         dialog.show();
     }
 
@@ -59,8 +73,9 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
                     // Read each value and create a RealmPointModel for each one
                     int pointIndex = 1;
                     line = line.substring(line.indexOf(' ') + 1);
-                    for (String value : line.split("\\s+")) {
-                        RealmPointModel pointModel = new RealmPointModel(pointIndex++, Float.parseFloat(value), chartModel);
+                    String split[] = line.split("\\s+");
+                    for (int i = 0; i < split.length; i += 3) {
+                        RealmPointModel pointModel = new RealmPointModel(pointIndex++, Float.parseFloat(split[i]), chartModel);
                         chartModel.addPoint(pointModel);
                     }
 
