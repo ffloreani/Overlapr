@@ -36,7 +36,13 @@ public class HistoryAdapter extends RealmRecyclerViewAdapter<RealmChartModel, Hi
         historyView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onClickListener.onItemClick(v, viewHolder.getAdapterPosition()); // TODO Or getLayoutPosition()?
+                onClickListener.onItemClick(v, viewHolder.getAdapterPosition());
+            }
+        });
+        historyView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                return onClickListener.onItemLongClick(v, getData().get(viewHolder.getAdapterPosition()));
             }
         });
 

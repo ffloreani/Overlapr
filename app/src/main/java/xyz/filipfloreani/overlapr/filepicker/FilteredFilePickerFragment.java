@@ -9,7 +9,7 @@ import java.io.File;
 public class FilteredFilePickerFragment extends FilePickerFragment {
 
     // File extension to filter on
-    private static final String EXTENSION_PAF = ".paf";
+    private static final String EXTENSION_PAF = ".txt";
 
     private String getExtension(@NonNull File file) {
         String path = file.getPath();

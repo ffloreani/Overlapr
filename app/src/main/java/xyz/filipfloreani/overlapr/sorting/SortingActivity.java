@@ -1,10 +1,13 @@
 package xyz.filipfloreani.overlapr.sorting;
 
+import android.app.ProgressDialog;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -23,10 +26,12 @@ import static xyz.filipfloreani.overlapr.swipecards.internal.Direction.UP;
 public class SortingActivity extends AppCompatActivity implements OnExitListener {
 
     private Realm realm;
-    private List<RealmChartModel> charts;
+    private List<RealmChartModel> charts = new ArrayList<>();
 
     private SwipeAdapterView flingContainer;
     private SortingAdapter sortingAdapter;
+
+    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,12 +56,10 @@ public class SortingActivity extends AppCompatActivity implements OnExitListener
     }
 
     /**
-     * Queries Realm for all stored RealmChartModels and returns a list of all found objects.
-     *
-     * @return List of all found RealmChartModel objects
+     * Queries Realm for all stored RealmChartModels through a custom AsyncTask.
      */
-    private List<RealmChartModel> loadCharts() {
-        return realm.where(RealmChartModel.class).findAll();
+    private void startLoadingTask() {
+        new listLoadingTask(true).execute();
     }
 
     @Override
@@ -82,9 +85,22 @@ public class SortingActivity extends AppCompatActivity implements OnExitListener
                     @Override
                     public void onClick(View v) {
                     }
-                })
-                .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                .show();
+                }
+            }, new Realm.Transaction.OnError() {
+                @Override
+                public void onError(Throwable error) {
+                    Log.d(TAG, "Writing failed");
+                    Snackbar.make(flingContainer, R.string.mark_failed, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.undo, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                            }
+                        })
+                        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
+                        .show();
+                }
+            });
+        }
     }
 
 }

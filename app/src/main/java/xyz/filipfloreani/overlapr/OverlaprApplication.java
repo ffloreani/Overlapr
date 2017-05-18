@@ -4,6 +4,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.facebook.stetho.Stetho;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
@@ -28,6 +30,8 @@ public class OverlaprApplication extends Application {
         Realm.init(this);
         RealmConfiguration realmConfig = new RealmConfiguration.Builder().deleteRealmIfMigrationNeeded().build();
         Realm.setDefaultConfiguration(realmConfig);
+
+        Stetho.initializeWithDefaults(this);
 
         SharedPreferences sp = getSharedPreferences(HomeActivity.SHARED_PREF_HOME_ACTIVITY, Context.MODE_PRIVATE);
         sp.edit().clear().commit();

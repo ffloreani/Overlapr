@@ -96,7 +96,7 @@ class SortingAdapter extends BaseAdapter {
      * Sets the given data set to the given chart, after which it invalidates the chart.
      *
      * @param realmDataSet Data set to be drawn on the chart
-     * @param lineChart The chart that the data set is to be drawn on
+     * @param lineChart    The chart that the data set is to be drawn on
      */
     private void setDataSetToChart(RealmLineDataSet<RealmPointModel> realmDataSet, LineChart lineChart) {
         customizeDataSet(realmDataSet);
@@ -127,8 +127,5 @@ class SortingAdapter extends BaseAdapter {
         Drawable gradientDrawable = ContextCompat.getDrawable(context, R.drawable.fade_green);
         realmDataSet.setFillDrawable(gradientDrawable);
         realmDataSet.setDrawFilled(true);
-
-        realmDataSet.setDrawHorizontalHighlightIndicator(false);
-        realmDataSet.setHighLightColor(Color.parseColor("#C62828"));
     }
 }
