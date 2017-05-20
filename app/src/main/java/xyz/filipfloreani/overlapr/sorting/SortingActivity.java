@@ -8,9 +8,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
-import com.lorentzos.flingswipe.SwipeFlingAdapterView;
+import com.wenchao.cardstack.CardStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +18,17 @@ import io.realm.Realm;
 import xyz.filipfloreani.overlapr.R;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
 
-public class SortingActivity extends AppCompatActivity implements SwipeFlingAdapterView.onFlingListener {
+public class SortingActivity extends AppCompatActivity {
 
     private static final String TAG = "SortingActivity";
+    private static final int DETECTION_THRESHOLD = 300;
 
     private Realm realm;
     private List<RealmChartModel> charts = new ArrayList<>();
 
-    private SwipeFlingAdapterView flingContainer;
-    private SortingAdapter sortingAdapter;
-
-    private boolean isLoading = false;
+    private CardStack cardStackView;
+    private SortingStackAdapter sortingStackAdapter;
+    private CardStackListener cardStackListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,11 +37,15 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
 
         realm = Realm.getDefaultInstance();
 
-        flingContainer = (SwipeFlingAdapterView) findViewById(R.id.swipe_adapter_view);
+        cardStackView = (CardStack) findViewById(R.id.card_stack);
+        cardStackView.setContentResource(R.layout.sorting_card);
+
+        cardStackListener = new CardStackListener(DETECTION_THRESHOLD, this);
+        cardStackView.setListener(cardStackListener);
 
         startLoadingTask();
-        sortingAdapter = new SortingAdapter(this, charts, realm);
-        flingContainer.init(this, sortingAdapter);
+        sortingStackAdapter = new SortingStackAdapter(this, R.layout.sorting_card, charts, realm);
+        cardStackView.setAdapter(sortingStackAdapter);
     }
 
     @Override
@@ -58,120 +61,116 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
         new listLoadingTask(true).execute();
     }
 
-    @Override
-    public void removeFirstObjectInAdapter() {
-        if (charts.size() > 0) {
-            charts.remove(0);
-            sortingAdapter.notifyDataSetChanged();
-        }
+    public void onExitTopLeft(int chartIndex) {
+        final RealmChartModel chart = charts.get(chartIndex - 1);
+        chart.setSortingOption(SortingOptions.REPEAT);
+
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realmTrans) {
+                Log.d(TAG, "Writing sort to Realm...");
+                realmTrans.copyToRealmOrUpdate(chart);
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Writing complete");
+                makeUndoSnackbar(R.string.mark_repeat);
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(TAG, "Writing failed");
+                Snackbar.make(cardStackView, R.string.mark_failed, Snackbar.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    @Override
-    public void onLeftCardExit(final Object o) {
-        if (o instanceof RealmChartModel) {
-            final RealmChartModel chart = (RealmChartModel) o;
-            chart.setSortingOption(SortingOptions.REPEAT);
+    public void onExitTopRight(int chartIndex) {
+        final RealmChartModel chart = charts.get(chartIndex);
+        chart.setSortingOption(SortingOptions.CHIMERIC);
 
-            realm.executeTransactionAsync(new Realm.Transaction() {
-                @Override
-                public void execute(Realm realmTrans) {
-                    Log.d(TAG, "Writing sort to Realm...");
-                    realmTrans.copyToRealmOrUpdate(chart);
-                }
-            }, new Realm.Transaction.OnSuccess() {
-                @Override
-                public void onSuccess() {
-                    Log.d(TAG, "Writing complete");
-                    Snackbar.make(flingContainer, R.string.mark_repeat, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.undo, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                            }
-                        })
-                        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                        .show();
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realmTrans) {
+                Log.d(TAG, "Writing sort to Realm...");
+                realmTrans.copyToRealmOrUpdate(chart);
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Writing complete");
+                makeUndoSnackbar(R.string.mark_chimeric);
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(TAG, "Writing failed");
+                Snackbar.make(cardStackView, R.string.mark_failed, Snackbar.LENGTH_SHORT).show();
+            }
+        });
+    }
 
-                    if (charts.size() < 2) {
-                        onAdapterNearEmpty();
+    public void onExitBottomLeft(int chartIndex) {
+        final RealmChartModel chart = charts.get(chartIndex);
+        chart.setSortingOption(SortingOptions.REGULAR);
+
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realmTrans) {
+                Log.d(TAG, "Writing sort to Realm...");
+                realmTrans.copyToRealmOrUpdate(chart);
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Writing complete");
+                makeUndoSnackbar(R.string.mark_regular);
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(TAG, "Writing failed");
+                Snackbar.make(cardStackView, R.string.mark_failed, Snackbar.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void onExitBottomRight(int chartIndex) {
+        final RealmChartModel chart = charts.get(chartIndex);
+        chart.setSortingOption(SortingOptions.LOW_QUALITY);
+
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realmTrans) {
+                Log.d(TAG, "Writing sort to Realm...");
+                realmTrans.copyToRealmOrUpdate(chart);
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Writing complete");
+                makeUndoSnackbar(R.string.mark_low_quality);
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(TAG, "Writing failed");
+                Snackbar.make(cardStackView, R.string.mark_failed, Snackbar.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void makeUndoSnackbar(int stringResource) {
+        Snackbar.make(cardStackView, stringResource, Snackbar.LENGTH_LONG)
+                .setAction(R.string.undo, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        cardStackView.undo();
                     }
-                }
-            }, new Realm.Transaction.OnError() {
-                @Override
-                public void onError(Throwable error) {
-                    Log.d(TAG, "Writing failed");
-                    Snackbar.make(flingContainer, R.string.mark_failed, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.undo, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                            }
-                        })
-                        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                        .show();
-                }
-            });
-        }
-    }
-
-    @Override
-    public void onRightCardExit(final Object o) {
-        if (o instanceof RealmChartModel) {
-            final RealmChartModel chart = (RealmChartModel) o;
-            chart.setSortingOption(SortingOptions.CHYMERIC);
-
-            realm.executeTransactionAsync(new Realm.Transaction() {
-                @Override
-                public void execute(Realm realmTrans) {
-                    Log.d(TAG, "Writing sort to Realm...");
-                    realmTrans.copyToRealmOrUpdate(chart);
-                }
-            }, new Realm.Transaction.OnSuccess() {
-                @Override
-                public void onSuccess() {
-                    Log.d(TAG, "Writing complete");
-                    Snackbar.make(flingContainer, R.string.mark_chimeric, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.undo, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                            }
-                        })
-                        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                        .show();
-
-                    if (charts.size() < 2) {
-                        onAdapterNearEmpty();
-                    }
-                }
-            }, new Realm.Transaction.OnError() {
-                @Override
-                public void onError(Throwable error) {
-                    Log.d(TAG, "Writing failed");
-                    Snackbar.make(flingContainer, R.string.mark_failed, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.undo, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                            }
-                        })
-                        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                        .show();
-                }
-            });
-        }
-    }
-
-    public void onAdapterNearEmpty() {
-        if (realm.where(RealmChartModel.class).equalTo("sortingOption", 4).count() == 0) {
-            Toast.makeText(this, R.string.all_charts_sorted, Toast.LENGTH_SHORT).show();
-        } else if (!isLoading) {
-            //Toast.makeText(this, R.string.loading_extra_cards, Toast.LENGTH_SHORT).show();
-            //new listLoadingTask(false).execute();
-        }
-    }
-
-    @Override
-    public void onAdapterAboutToEmpty(int i) {}
-
-    @Override
-    public void onScroll(float v) {
+                })
+                .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
+                .show();
     }
 
     private class listLoadingTask extends AsyncTask<Void, Void, List<RealmChartModel>> {
@@ -194,7 +193,6 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
                 progressDialog.setCancelable(false);
                 progressDialog.show();
             }
-            isLoading = true;
         }
 
         @Override
@@ -222,8 +220,7 @@ public class SortingActivity extends AppCompatActivity implements SwipeFlingAdap
                 progressDialog.dismiss();
             }
 
-            isLoading = false;
-            sortingAdapter.notifyDataSetChanged();
+            sortingStackAdapter.notifyDataSetChanged();
         }
     }
 }

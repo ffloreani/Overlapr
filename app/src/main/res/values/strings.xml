@@ -1,27 +1,36 @@
 <resources>
     <string name="app_name">Overlapr</string>
     <string name="action_settings">Settings</string>
-    <string name="highlight">Highlight</string>
+
     <string name="empty_state_head">You don\'t have any scans yet (OMG)</string>
     <string name="empty_state_desc">Press the button bellow to change that!</string>
+
     <string name="graph_title">Overlap graph</string>
     <string name="graph_sorting">Graph sorting</string>
+
     <string name="sorting">Sorting</string>
     <string name="selection">Selection</string>
     <string name="clear_history">Clear history</string>
     <string name="load_charts">Load charts</string>
     <string name="save_highlights">Save highlights</string>
+
     <string name="all_sorted">All charts have been sorted</string>
+
+    <string name="create_cards_dialog">Creating cards</string>
     <string name="mark_chimeric">Marked as chimeric</string>
     <string name="mark_repeat">Marked as repeat</string>
+    <string name="mark_regular">Marked as regular</string>
+    <string name="mark_low_quality">Marked as low quality</string>
+    <string name="mark_failed">Failed to save marking</string>
+    <string name="all_charts_sorted">All charts have been sorted!</string>
+    <string name="undo">Undo</string>
+    <string name="loading_extra_cards">Loading additional cards</string>
+
+    <string name="highlight">Highlight</string>
     <string name="highlight_complete">Highlighting complete!</string>
     <string name="highlight_error">Highlighting failed!</string>
-    <string name="overlap_reads">Overlaping reads</string>
     <string name="position_highlighter">Position the highlighter first!</string>
     <string name="no_graph_error">You must have a graph drawn in order to highlight a value.</string>
-    <string name="mark_failed">Failed to save marking</string>
-    <string name="create_cards_dialog">Creating cards</string>
-    <string name="undo">Undo</string>
-    <string name="all_charts_sorted">All charts have been sorted!</string>
-    <string name="loading_extra_cards">Loading additional cards</string>
+
+    <string name="overlap_reads">Overlaping reads</string>
 </resources>

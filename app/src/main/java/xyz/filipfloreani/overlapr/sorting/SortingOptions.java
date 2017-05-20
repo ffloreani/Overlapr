@@ -6,7 +6,7 @@ package xyz.filipfloreani.overlapr.sorting;
 
 public enum SortingOptions {
     REGULAR,
-    CHYMERIC,
+    CHIMERIC,
     REPEAT,
     LOW_QUALITY,
     UNSORTED;
@@ -16,7 +16,7 @@ public enum SortingOptions {
             case 0:
                 return REGULAR;
             case 1:
-                return CHYMERIC;
+                return CHIMERIC;
             case 2:
                 return REPEAT;
             case 3:

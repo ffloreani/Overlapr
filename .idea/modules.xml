@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Overlapr.iml" filepath="$PROJECT_DIR$/Overlapr.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/card-stack-0.1.6/card-stack-0.1.6.iml" filepath="$PROJECT_DIR$/card-stack-0.1.6/card-stack-0.1.6.iml" />
     </modules>
   </component>
 </project>

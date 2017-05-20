@@ -3,14 +3,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".sorting.SortingActivity">
 
-    <com.lorentzos.flingswipe.SwipeFlingAdapterView
-        android:id="@+id/swipe_adapter_view"
+    <com.wenchao.cardstack.CardStack
+        android:id="@+id/card_stack"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:max_visible="2"
-        app:min_adapter_stack="2"
-        app:rotation_degrees="15.5"
-        tools:context=".sorting.SortingActivity" />
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:gravity="center"
+        android:padding="16dp"
+        app:card_enable_loop="false"
+        app:card_enable_rotation="true"
+        app:card_gravity="bottom"
+        app:card_margin="20dp"
+        app:card_stack_size="4" />
+
 </LinearLayout>
