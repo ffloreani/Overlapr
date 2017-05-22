@@ -11,9 +11,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.realm.implementation.RealmLineDataSet;
@@ -44,7 +45,7 @@ class SortingStackAdapter extends ArrayAdapter<RealmChartModel> {
 
     @NonNull
     @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+    public View getView(int position, @Nullable View convertView, @NonNull final ViewGroup parent) {
         if (convertView == null) {
             convertView = layoutInflater.inflate(R.layout.sorting_card, parent, false);
         }
@@ -52,8 +53,11 @@ class SortingStackAdapter extends ArrayAdapter<RealmChartModel> {
         RealmChartModel chart = getItem(position);
         if (chart != null) {
             RealmLineDataSet<RealmPointModel> realmDataSet = getRealmDataSet(chart);
-            LineChart lineChart = (LineChart) convertView.findViewById(R.id.card_chart);
 
+            LineChart lineChart = (LineChart) convertView.findViewById(R.id.card_chart);
+            TextView cardTitle = (TextView) convertView.findViewById(R.id.card_title);
+
+            cardTitle.setText(chart.getTitle());
             setDataSetToChart(realmDataSet, lineChart);
         }
 
@@ -85,13 +89,17 @@ class SortingStackAdapter extends ArrayAdapter<RealmChartModel> {
 
         lineData.setHighlightEnabled(false);
 
-        // Set up X-axis
-        XAxis xAxis = lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-
-        // Set up Y-axis
-        YAxis yAxis = lineChart.getAxisRight();
-        yAxis.setEnabled(false);
+        // Disable X-axis labels & grid axis
+        lineChart.getXAxis().setDrawLabels(false);
+        lineChart.getXAxis().setDrawGridLines(false);
+        // Disable right Y-axis
+        lineChart.getAxisRight().setEnabled(false);
+        // Disable legend
+        lineChart.getLegend().setEnabled(false);
+        // Remove description
+        Description emptyDesc = new Description();
+        emptyDesc.setText("");
+        lineChart.setDescription(emptyDesc);
 
         lineChart.setScaleEnabled(false);
 

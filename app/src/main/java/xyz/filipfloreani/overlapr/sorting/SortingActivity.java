@@ -43,7 +43,7 @@ public class SortingActivity extends AppCompatActivity {
         cardStackListener = new CardStackListener(DETECTION_THRESHOLD, this);
         cardStackView.setListener(cardStackListener);
 
-        startLoadingTask();
+        startInitLoadingTask();
         sortingStackAdapter = new SortingStackAdapter(this, R.layout.sorting_card, charts, realm);
         cardStackView.setAdapter(sortingStackAdapter);
     }
@@ -57,8 +57,8 @@ public class SortingActivity extends AppCompatActivity {
     /**
      * Queries Realm for all stored RealmChartModels through a custom AsyncTask.
      */
-    private void startLoadingTask() {
-        new listLoadingTask(true).execute();
+    private void startInitLoadingTask() {
+        new ListLoadingTask(true).execute();
     }
 
     public void onExitTopLeft(int chartIndex) {
@@ -76,6 +76,10 @@ public class SortingActivity extends AppCompatActivity {
             public void onSuccess() {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_repeat);
+
+                if (isAdapterAboutToEmpty()) {
+                    addMoreChartsToAdapter();
+                }
             }
         }, new Realm.Transaction.OnError() {
             @Override
@@ -87,7 +91,7 @@ public class SortingActivity extends AppCompatActivity {
     }
 
     public void onExitTopRight(int chartIndex) {
-        final RealmChartModel chart = charts.get(chartIndex);
+        final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.CHIMERIC);
 
         realm.executeTransactionAsync(new Realm.Transaction() {
@@ -101,6 +105,10 @@ public class SortingActivity extends AppCompatActivity {
             public void onSuccess() {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_chimeric);
+
+                if (isAdapterAboutToEmpty()) {
+                    addMoreChartsToAdapter();
+                }
             }
         }, new Realm.Transaction.OnError() {
             @Override
@@ -112,7 +120,7 @@ public class SortingActivity extends AppCompatActivity {
     }
 
     public void onExitBottomLeft(int chartIndex) {
-        final RealmChartModel chart = charts.get(chartIndex);
+        final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.REGULAR);
 
         realm.executeTransactionAsync(new Realm.Transaction() {
@@ -126,6 +134,10 @@ public class SortingActivity extends AppCompatActivity {
             public void onSuccess() {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_regular);
+
+                if (isAdapterAboutToEmpty()) {
+                    addMoreChartsToAdapter();
+                }
             }
         }, new Realm.Transaction.OnError() {
             @Override
@@ -137,7 +149,7 @@ public class SortingActivity extends AppCompatActivity {
     }
 
     public void onExitBottomRight(int chartIndex) {
-        final RealmChartModel chart = charts.get(chartIndex);
+        final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.LOW_QUALITY);
 
         realm.executeTransactionAsync(new Realm.Transaction() {
@@ -151,6 +163,10 @@ public class SortingActivity extends AppCompatActivity {
             public void onSuccess() {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_low_quality);
+
+                if (isAdapterAboutToEmpty()) {
+                    addMoreChartsToAdapter();
+                }
             }
         }, new Realm.Transaction.OnError() {
             @Override
@@ -173,12 +189,20 @@ public class SortingActivity extends AppCompatActivity {
                 .show();
     }
 
-    private class listLoadingTask extends AsyncTask<Void, Void, List<RealmChartModel>> {
+    private boolean isAdapterAboutToEmpty() {
+        return sortingStackAdapter.getCount() < 3;
+    }
+
+    private void addMoreChartsToAdapter() {
+        new ListLoadingTask(false).execute();
+    }
+
+    private class ListLoadingTask extends AsyncTask<Void, Void, List<RealmChartModel>> {
 
         private ProgressDialog progressDialog;
         private boolean showProgressDialog;
 
-        listLoadingTask(boolean showProgressDialog) {
+        ListLoadingTask(boolean showProgressDialog) {
             progressDialog = new ProgressDialog(SortingActivity.this);
             this.showProgressDialog = showProgressDialog;
         }
