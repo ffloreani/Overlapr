@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 
 import io.realm.Realm;
 import xyz.filipfloreani.overlapr.HomeActivity;
+import xyz.filipfloreani.overlapr.R;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
 import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
@@ -36,7 +37,7 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        dialog.setMessage("Parsing charts to Realm...");
+        dialog.setMessage(activity.getString(R.string.fumbling_charts));
         dialog.setIndeterminate(true);
         dialog.setCancelable(true);
         dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -65,8 +66,17 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    if (isCancelled()) {
+                        break;
+                    }
+
                     // Create a RealmChartModel
                     String chartID = "Chart " + line.substring(0, line.indexOf(' '));
+                    if (realm.where(RealmChartModel.class).equalTo("title", chartID).findFirst() != null) {
+                        Log.d(TAG, "Chart " + chartID + " already exists");
+                        continue;
+                    }
+
                     Log.d(TAG, "Creating chart: " + chartID);
                     RealmChartModel chartModel = new RealmChartModel(chartID, GeneralUtils.getUTCNow());
 

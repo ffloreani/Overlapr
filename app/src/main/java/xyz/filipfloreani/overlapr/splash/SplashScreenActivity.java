@@ -1,9 +1,13 @@
 package xyz.filipfloreani.overlapr.splash;
 
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.transition.Fade;
+import android.view.Window;
 import android.widget.TextView;
 
 import io.realm.ObjectServerError;
@@ -27,13 +31,25 @@ public class SplashScreenActivity extends AppCompatActivity implements SyncUser.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
         setContentView(R.layout.activity_splash_screen);
 
         handler = new Handler();
 
         splashStatusText = (TextView) findViewById(R.id.splash_status);
 
-        loginAdmin();
+        // inside your activity (if you did not enable transitions in your theme)
+
+        //loginAdmin();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Intent intent = new Intent(SplashScreenActivity.this, HomeActivity.class);
+                Bundle bundle = ActivityOptionsCompat.makeCustomAnimation(SplashScreenActivity.this, android.R.anim.fade_in, android.R.anim.fade_out).toBundle();
+                SplashScreenActivity.this.startActivity(intent, bundle);
+                SplashScreenActivity.this.finish();
+            }
+        }, POST_MILLIS);
     }
 
     private void loginAdmin() {
@@ -60,7 +76,7 @@ public class SplashScreenActivity extends AppCompatActivity implements SyncUser.
             @Override
             public void run() {
                 Intent intent = new Intent(SplashScreenActivity.this, HomeActivity.class);
-                SplashScreenActivity.this.startActivity(intent);
+                SplashScreenActivity.this.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(SplashScreenActivity.this).toBundle());
                 SplashScreenActivity.this.finish();
             }
         }, POST_MILLIS);

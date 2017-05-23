@@ -17,9 +17,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import java.io.File;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
@@ -54,7 +57,9 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
         setContentView(R.layout.activity_home);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -207,7 +212,7 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
     private void clearHistory() {
         AlertDialog.Builder adBuilder = GeneralUtils.buildWatchOutDialog(this);
         adBuilder
-                .setMessage("Are you sure you want to delete all chart history?")
+                .setMessage(R.string.clear_history_message)
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -265,7 +270,9 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == CHARTS_CODE && resultCode == Activity.RESULT_OK) {
-            Uri fileUri = data.getData();
+            Uri uri = data.getData();
+            File file = com.nononsenseapps.filepicker.Utils.getFileForUri(uri);
+            Uri fileUri = Uri.fromFile(file);
 
             new ChartsParserTask(this).execute(fileUri);
         }

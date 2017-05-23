@@ -35,6 +35,10 @@ public class SortingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sorting);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
         realm = Realm.getDefaultInstance();
 
         cardStackView = (CardStack) findViewById(R.id.card_stack);
@@ -61,7 +65,7 @@ public class SortingActivity extends AppCompatActivity {
         new ListLoadingTask(true).execute();
     }
 
-    public void onExitTopLeft(int chartIndex) {
+    public void onExitTopLeft(final int chartIndex) {
         final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.REPEAT);
 
@@ -77,7 +81,7 @@ public class SortingActivity extends AppCompatActivity {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_repeat);
 
-                if (isAdapterAboutToEmpty()) {
+                if (isAdapterAboutToEmpty(chartIndex - 1)) {
                     addMoreChartsToAdapter();
                 }
             }
@@ -90,7 +94,7 @@ public class SortingActivity extends AppCompatActivity {
         });
     }
 
-    public void onExitTopRight(int chartIndex) {
+    public void onExitTopRight(final int chartIndex) {
         final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.CHIMERIC);
 
@@ -106,7 +110,7 @@ public class SortingActivity extends AppCompatActivity {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_chimeric);
 
-                if (isAdapterAboutToEmpty()) {
+                if (isAdapterAboutToEmpty(chartIndex - 1)) {
                     addMoreChartsToAdapter();
                 }
             }
@@ -119,7 +123,7 @@ public class SortingActivity extends AppCompatActivity {
         });
     }
 
-    public void onExitBottomLeft(int chartIndex) {
+    public void onExitBottomLeft(final int chartIndex) {
         final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.REGULAR);
 
@@ -135,7 +139,7 @@ public class SortingActivity extends AppCompatActivity {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_regular);
 
-                if (isAdapterAboutToEmpty()) {
+                if (isAdapterAboutToEmpty(chartIndex - 1)) {
                     addMoreChartsToAdapter();
                 }
             }
@@ -148,7 +152,7 @@ public class SortingActivity extends AppCompatActivity {
         });
     }
 
-    public void onExitBottomRight(int chartIndex) {
+    public void onExitBottomRight(final int chartIndex) {
         final RealmChartModel chart = charts.get(chartIndex - 1);
         chart.setSortingOption(SortingOptions.LOW_QUALITY);
 
@@ -164,7 +168,7 @@ public class SortingActivity extends AppCompatActivity {
                 Log.d(TAG, "Writing complete");
                 makeUndoSnackbar(R.string.mark_low_quality);
 
-                if (isAdapterAboutToEmpty()) {
+                if (isAdapterAboutToEmpty(chartIndex - 1)) {
                     addMoreChartsToAdapter();
                 }
             }
@@ -178,22 +182,23 @@ public class SortingActivity extends AppCompatActivity {
     }
 
     public void makeUndoSnackbar(int stringResource) {
-        Snackbar.make(cardStackView, stringResource, Snackbar.LENGTH_LONG)
-                .setAction(R.string.undo, new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        cardStackView.undo();
-                    }
-                })
-                .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-                .show();
+        Snackbar.make(cardStackView, stringResource, Snackbar.LENGTH_SHORT)
+//        .setAction(R.string.undo, new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        cardStackView.undo();
+//                    }
+//                })
+//        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
+            .show();
     }
 
-    private boolean isAdapterAboutToEmpty() {
-        return sortingStackAdapter.getCount() < 3;
+    private boolean isAdapterAboutToEmpty(int currentIndex) {
+        return currentIndex >= sortingStackAdapter.getCount() - 3;
     }
 
     private void addMoreChartsToAdapter() {
+        Log.d(TAG, "Loading more charts...");
         new ListLoadingTask(false).execute();
     }
 
@@ -229,7 +234,7 @@ public class SortingActivity extends AppCompatActivity {
                 int subIndex = Math.min(realmCharts.size(), 5);
                 realmCharts = realmCharts.subList(0, subIndex);
 
-                List<RealmChartModel> charts = asyncRealm.copyFromRealm(realmCharts, 1);
+                List<RealmChartModel> charts = asyncRealm.copyFromRealm(realmCharts, 2);
                 Log.d(TAG, "Conversion complete");
 
                 return charts;
@@ -237,14 +242,22 @@ public class SortingActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(List<RealmChartModel> realmChartModels) {
-            charts.addAll(realmChartModels);
+        protected void onPostExecute(List<RealmChartModel> chartModels) {
+            for (RealmChartModel model : chartModels) {
+                addChartIfNotExist(model);
+            }
 
             if (showProgressDialog && progressDialog.isShowing()) {
                 progressDialog.dismiss();
             }
 
             sortingStackAdapter.notifyDataSetChanged();
+        }
+
+        private void addChartIfNotExist(RealmChartModel model) {
+            if (charts.contains(model)) return;
+
+            charts.add(model);
         }
     }
 }

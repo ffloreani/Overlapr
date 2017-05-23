@@ -62,6 +62,10 @@ public class GraphingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pafgraphing);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
         realm = Realm.getDefaultInstance();
 
         // Line chart view
