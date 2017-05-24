@@ -38,4 +38,5 @@
     <string name="connecting_server">Connecting to server…</string>
     <string name="connection_success">Connection successful!</string>
     <string name="fumbling_charts">Fumbling with charts…</string>
+    <string name="start_end_warning">The start point must come before the end point!</string>
 </resources>

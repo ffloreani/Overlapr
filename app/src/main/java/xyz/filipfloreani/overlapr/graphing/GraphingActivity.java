@@ -88,11 +88,7 @@ public class GraphingActivity extends AppCompatActivity {
 
         chartUuid = getUUIDFromSharedPrefs();
         setTitle(getChartTitle(chartUuid));
-        if (chartUuid != null) {
-            // Read points from Realm and show the chart
-            RealmResults<RealmPointModel> chartPoints = getAllPointsForChartUUID(chartUuid);
-            setDataToChart(chartPoints);
-        }
+        createChart();
     }
 
     @Override
@@ -134,6 +130,12 @@ public class GraphingActivity extends AppCompatActivity {
 
                 wasStartMarked = false;
 
+                if (startX >= endX) {
+                    Toast.makeText(this, R.string.start_end_warning, Toast.LENGTH_SHORT).show();
+                    startPointTextView.setText("");
+                    return;
+                }
+
                 endPointTextView.setText("End: (" + endX + ", " + endY + ")");
 
                 writeHighlightsToRealm(startX, startY, endX, endY);
@@ -143,22 +145,68 @@ public class GraphingActivity extends AppCompatActivity {
         }
     }
 
-    public void setDataToChart(RealmResults<RealmPointModel> points) {
-        RealmLineDataSet<RealmPointModel> realmDataSet = new RealmLineDataSet<>(points, "xCoor", "yCoor");
+    private void createChart() {
+        if (chartUuid != null) {
+            // Read points from Realm and show the chart
+            if (isChartHighlighted()) {
+                setDataToHighlightedChart();
+            } else {
+                setDataToChart();
+            }
+        }
+    }
 
-        // It's ugly, but it works
-        realmDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-        realmDataSet.setColor(Color.parseColor("#3C9F40"));
-        realmDataSet.setDrawCircles(false);
+    private boolean isChartHighlighted() {
+        return realm.where(RealmHighlightsModel.class).equalTo("parentChart.uuid", chartUuid).findFirst() != null;
+    }
 
-        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
-        realmDataSet.setFillDrawable(gradientDrawable);
-        realmDataSet.setDrawFilled(true);
+    private void setDataToHighlightedChart() {
+        RealmHighlightsModel highlight = realm.where(RealmHighlightsModel.class).equalTo("parentChart.uuid", chartUuid).findFirst();
+        float highlightStartXCoor = highlight.getStartPoint().getxCoor();
+        float highlightEndXCoor = highlight.getEndPoint().getxCoor();
 
-        realmDataSet.setDrawHorizontalHighlightIndicator(false);
-        realmDataSet.setHighLightColor(Color.parseColor("#C62828"));
+        // Get separate realm result lists
+        RealmResults<RealmPointModel> pointsLeftOfHighlight = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).lessThanOrEqualTo("xCoor", highlightStartXCoor).findAll();
+        RealmResults<RealmPointModel> highlightedPoints = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).between("xCoor", highlightStartXCoor, highlightEndXCoor).findAll();
+        RealmResults<RealmPointModel> pointsRightOfHighlight = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).greaterThanOrEqualTo("xCoor", highlightEndXCoor).findAll();
+
+        // Create custom non-highlight sets
+        RealmLineDataSet<RealmPointModel> dataSetLeft = createCustomDataSet(pointsLeftOfHighlight, false);
+        RealmLineDataSet<RealmPointModel> dataSetRight = createCustomDataSet(pointsRightOfHighlight, false);
+
+        // Create custom highlight set
+        RealmLineDataSet<RealmPointModel> dataSetHighlight = createCustomDataSet(highlightedPoints, true);
+
+        RealmLineDataSet[] dataArray = new RealmLineDataSet[3];
+        dataArray[0] = dataSetLeft;
+        dataArray[1] = dataSetHighlight;
+        dataArray[2] = dataSetRight;
+
+        configureChart(new LineData(dataArray));
+    }
+
+    private void setDataToChart() {
+        RealmResults<RealmPointModel> points = getAllPointsForChartUUID(chartUuid);
+        RealmLineDataSet<RealmPointModel> realmDataSet = createCustomDataSet(points, false);
 
         configureChart(new LineData(realmDataSet));
+    }
+
+    private RealmLineDataSet<RealmPointModel> createCustomDataSet(RealmResults<RealmPointModel> points, boolean isHighlightSet) {
+        RealmLineDataSet<RealmPointModel> dataSet = new RealmLineDataSet<>(points, "xCoor", "yCoor");
+
+        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        dataSet.setColor(isHighlightSet ? R.color.highlightChartColor : R.color.regularChartColor);
+        dataSet.setDrawCircles(false);
+
+        Drawable gradientDrawable = ContextCompat.getDrawable(this, isHighlightSet ? R.drawable.fade_red : R.drawable.fade_green);
+        dataSet.setFillDrawable(gradientDrawable);
+        dataSet.setDrawFilled(true);
+
+        dataSet.setDrawHorizontalHighlightIndicator(false);
+        dataSet.setHighLightColor(R.color.highlighterColor);
+
+        return dataSet;
     }
 
     private void configureChart(LineData lineData) {
@@ -170,12 +218,15 @@ public class GraphingActivity extends AppCompatActivity {
         YAxis yAxis = lineChart.getAxisRight();
         yAxis.setEnabled(false);
 
+        lineChart.getLegend().setEnabled(false);
+
         // Set up description
         Description desc = new Description();
         desc.setText(getString(R.string.overlap_reads));
         lineChart.setDescription(desc);
 
         lineChart.setData(lineData);
+
         lineChart.invalidate();
 
         isGraphShown = true;
@@ -234,6 +285,7 @@ public class GraphingActivity extends AppCompatActivity {
             public void onSuccess() {
                 Log.d(TAG, "Highlights successfully copied to Realm!");
                 Toast.makeText(GraphingActivity.this, R.string.highlight_complete, Toast.LENGTH_SHORT).show();
+                createChart();
             }
         }, new Realm.Transaction.OnError() {
             @Override
