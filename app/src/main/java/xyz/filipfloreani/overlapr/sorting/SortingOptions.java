@@ -5,18 +5,24 @@ package xyz.filipfloreani.overlapr.sorting;
  */
 
 public enum SortingOptions {
-    REGULAR,
-    CHYMERIC,
-    REPEAT,
-    LOW_QUALITY,
-    UNSORTED;
+    REGULAR("Regular"),
+    CHIMERIC("Chimeric"),
+    REPEAT("Repeat"),
+    LOW_QUALITY("Low quality"),
+    UNSORTED("Unsorted");
+
+    private String name;
+
+    SortingOptions(String name) {
+        this.name = name;
+    }
 
     public static SortingOptions get(int position) {
         switch (position) {
             case 0:
                 return REGULAR;
             case 1:
-                return CHYMERIC;
+                return CHIMERIC;
             case 2:
                 return REPEAT;
             case 3:
@@ -25,5 +31,10 @@ public enum SortingOptions {
             default:
                 return UNSORTED;
         }
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

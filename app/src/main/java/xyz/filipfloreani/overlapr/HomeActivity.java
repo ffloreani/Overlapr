@@ -1,6 +1,7 @@
 package xyz.filipfloreani.overlapr;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,9 +18,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import java.io.File;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
@@ -33,6 +37,7 @@ import xyz.filipfloreani.overlapr.model.RealmChartModel;
 import xyz.filipfloreani.overlapr.model.RealmHighlightsModel;
 import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.sorting.SortingActivity;
+import xyz.filipfloreani.overlapr.sync.HttpOperations;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 import xyz.filipfloreani.overlapr.utils.SaveDataTask;
 
@@ -54,7 +59,9 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
         setContentView(R.layout.activity_home);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -64,7 +71,24 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startFilePicker(CHARTS_CODE);
+                AlertDialog.Builder builder = new AlertDialog.Builder(HomeActivity.this);
+                builder
+                        .setTitle(R.string.chart_resource)
+                        .setMessage(R.string.download_charts)
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                HttpOperations.getFile(HomeActivity.this);
+                                startFilePicker(CHARTS_CODE);
+                            }
+                        })
+                        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                startFilePicker(CHARTS_CODE);
+                            }
+                        })
+                        .show();
             }
         });
 
@@ -133,10 +157,7 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
                 startSortingActivity();
                 return true;
             case R.id.clear_history_item:
-                clearHistory();
-                return true;
-            case R.id.load_charts_item:
-                startFilePicker(CHARTS_CODE);
+                clearHistoryDialog();
                 return true;
             case R.id.save_highlights_item:
                 saveHighlightsToFile();
@@ -204,10 +225,10 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
         startActivity(i);
     }
 
-    private void clearHistory() {
+    private void clearHistoryDialog() {
         AlertDialog.Builder adBuilder = GeneralUtils.buildWatchOutDialog(this);
         adBuilder
-                .setMessage("Are you sure you want to delete all chart history?")
+                .setMessage(R.string.clear_history_message)
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -217,20 +238,43 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        final RealmResults<RealmChartModel> charts = realm.where(RealmChartModel.class).findAll();
-                        final RealmResults<RealmHighlightsModel> highlights = realm.where(RealmHighlightsModel.class).findAll();
-                        final RealmResults<RealmPointModel> points = realm.where(RealmPointModel.class).findAll();
-
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                highlights.deleteAllFromRealm();
-                                points.deleteAllFromRealm();
-                                charts.deleteAllFromRealm();
-                            }
-                        });
+                        dialog.cancel();
+                        clearRealm();
                     }
                 }).show();
+    }
+
+    private void clearRealm() {
+        final ProgressDialog dialog = new ProgressDialog(this);
+        dialog.setMessage(getString(R.string.erasing_history));
+        dialog.setIndeterminate(true);
+        dialog.show();
+
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmResults<RealmChartModel> charts = realm.where(RealmChartModel.class).findAll();
+                RealmResults<RealmHighlightsModel> highlights = realm.where(RealmHighlightsModel.class).findAll();
+                RealmResults<RealmPointModel> points = realm.where(RealmPointModel.class).findAll();
+
+                highlights.deleteAllFromRealm();
+                points.deleteAllFromRealm();
+                charts.deleteAllFromRealm();
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                if (dialog.isShowing()) {
+                    dialog.dismiss();
+                }
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                dialog.dismiss();
+                Toast.makeText(HomeActivity.this, R.string.erase_history_failure, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void saveHighlightsToFile() {
@@ -265,7 +309,9 @@ public class HomeActivity extends AppCompatActivity implements OnHistoryItemClic
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == CHARTS_CODE && resultCode == Activity.RESULT_OK) {
-            Uri fileUri = data.getData();
+            Uri uri = data.getData();
+            File file = com.nononsenseapps.filepicker.Utils.getFileForUri(uri);
+            Uri fileUri = Uri.fromFile(file);
 
             new ChartsParserTask(this).execute(fileUri);
         }

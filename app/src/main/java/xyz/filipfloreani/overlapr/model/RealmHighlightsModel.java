@@ -17,6 +17,7 @@ public class RealmHighlightsModel extends RealmObject {
     private String uuid = UUID.randomUUID().toString();
     private RealmPointModel startPoint;
     private RealmPointModel endPoint;
+    private RealmChartModel parentChart;
 
     public RealmHighlightsModel() {
     }
@@ -24,6 +25,12 @@ public class RealmHighlightsModel extends RealmObject {
     public RealmHighlightsModel(RealmPointModel startPoint, RealmPointModel endPoint) {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
+    }
+
+    public RealmHighlightsModel(RealmPointModel startPoint, RealmPointModel endPoint, RealmChartModel parentChart) {
+        this.startPoint = startPoint;
+        this.endPoint = endPoint;
+        this.parentChart = parentChart;
     }
 
     public String getUuid() {
@@ -48,5 +55,13 @@ public class RealmHighlightsModel extends RealmObject {
 
     public void setEndPoint(RealmPointModel endPoint) {
         this.endPoint = endPoint;
+    }
+
+    public RealmChartModel getParentChart() {
+        return parentChart;
+    }
+
+    public void setParentChart(RealmChartModel parentChart) {
+        this.parentChart = parentChart;
     }
 }

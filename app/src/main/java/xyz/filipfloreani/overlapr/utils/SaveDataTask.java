@@ -15,7 +15,9 @@ import java.io.OutputStreamWriter;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import xyz.filipfloreani.overlapr.model.RealmChartModel;
 import xyz.filipfloreani.overlapr.model.RealmHighlightsModel;
+import xyz.filipfloreani.overlapr.sync.HttpOperations;
 
 /**
  * Created by filipfloreani on 16/05/2017.
@@ -50,7 +52,12 @@ public class SaveDataTask extends AsyncTask<Void, Void, Void> {
     protected Void doInBackground(Void... params) {
         try (Realm realm = Realm.getDefaultInstance()) {
             RealmResults<RealmHighlightsModel> highlights = realm.where(RealmHighlightsModel.class).findAll();
-            writeHighlightsToFile(highlights);
+            RealmResults<RealmChartModel> sortedCharts = realm.where(RealmChartModel.class).notEqualTo("sortingOption", 4).findAll();
+
+            File outputFile = writeToFile(highlights, sortedCharts);
+            if (outputFile != null) {
+                HttpOperations.postFile(outputFile, context);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -69,39 +76,52 @@ public class SaveDataTask extends AsyncTask<Void, Void, Void> {
 
     /**
      * Creates a new file and writes the given highlights into it in the following form:
-     *
+     * <p>
      * 'Chart UUID' 'Chart title' '(Start point X, start point Y)' '(End point X, end point Y)'
      *
-     * @param highlights The highlights to write to the output file
+     * @param highlights   The highlights to write to the output file
+     * @param sortedCharts Collection of charts that have been sorted and are to be written to the output file
      * @throws IOException Thrown in case of BufferedReader failure
      */
-    private void writeHighlightsToFile(RealmResults<RealmHighlightsModel> highlights) throws IOException {
+    private File writeToFile(RealmResults<RealmHighlightsModel> highlights, RealmResults<RealmChartModel> sortedCharts) throws IOException {
+        if (highlights.isEmpty()) return null;
+
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            return;
+            return null;
         }
 
-        File outputDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Overlapr highlights output/");
+        File outputDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Overlapr results/");
         if (!outputDir.exists()) {
-            if (!outputDir.mkdirs()) Log.d(TAG, "Highlights directory not created");
+            if (!outputDir.mkdirs()) Log.d(TAG, "Results directory not created");
         }
 
         File outputFile = new File(outputDir + File.separator + "Output " + GeneralUtils.getUTCNowAsTimestamp() + ".txt");
         if (!outputFile.createNewFile()) {
-            return;
+            return null;
         }
 
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile)));
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile)))) {
+            for (RealmHighlightsModel highlight : highlights) {
+                String chartTitle = highlight.getStartPoint().getChart().getTitle();
+                String startPoint = "(" + Math.round(highlight.getStartPoint().getxCoor() * 6) + ", " + Math.round(highlight.getStartPoint().getyCoor()) + ")";
+                String endPoint = "(" + Math.round(highlight.getEndPoint().getxCoor() * 6) + ", " + Math.round(highlight.getEndPoint().getyCoor()) + ")";
 
-        for (RealmHighlightsModel highlight : highlights) {
-            String chartUuid = highlight.getStartPoint().getChart().getUuid();
-            String chartTitle = highlight.getStartPoint().getChart().getTitle();
-            String startPoint = "(" + highlight.getStartPoint().getxCoor() + ", " + highlight.getStartPoint().getyCoor() + ")";
-            String endPoint = "(" + highlight.getEndPoint().getxCoor() + ", " + highlight.getEndPoint().getyCoor() + ")";
-
-            bw.write(chartUuid + " " + chartTitle + " " + startPoint + " " + endPoint);
+                bw.write(chartTitle + " " + startPoint + " " + endPoint);
+                bw.newLine();
+            }
             bw.newLine();
+
+            for (RealmChartModel chart : sortedCharts) {
+                String chartTitle = chart.getTitle();
+                String sortingOption = chart.getSortingOption().toString();
+
+                bw.write(chartTitle + " " + sortingOption);
+                bw.newLine();
+            }
+
+            bw.flush();
         }
 
-        bw.flush();
+        return outputFile;
     }
 }

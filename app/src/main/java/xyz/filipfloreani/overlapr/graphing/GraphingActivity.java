@@ -1,7 +1,6 @@
 package xyz.filipfloreani.overlapr.graphing;
 
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -20,6 +19,8 @@ import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.realm.implementation.RealmLineDataSet;
 import com.github.mikephil.charting.highlight.Highlight;
+
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmAsyncTask;
@@ -48,13 +49,21 @@ public class GraphingActivity extends AppCompatActivity {
     private boolean isGraphShown = false;
 
     private String chartUuid = null;
-    private RealmHighlightsModel highlightsModel = new RealmHighlightsModel();
     private boolean wasStartMarked = false;
+
+    private float startX;
+    private float startY;
+    private float endX;
+    private float endY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pafgraphing);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
         realm = Realm.getDefaultInstance();
 
@@ -78,11 +87,7 @@ public class GraphingActivity extends AppCompatActivity {
 
         chartUuid = getUUIDFromSharedPrefs();
         setTitle(getChartTitle(chartUuid));
-        if (chartUuid != null) {
-            // Read points from Realm and show the chart
-            RealmResults<RealmPointModel> chartPoints = getAllPointsForChartUUID(chartUuid);
-            setDataToChart(chartPoints);
-        }
+        createChart();
     }
 
     @Override
@@ -102,67 +107,131 @@ public class GraphingActivity extends AppCompatActivity {
     private void showHighlightValue() {
         if (!isGraphShown) {
             AlertDialog.Builder builder = GeneralUtils.buildWatchOutDialog(this);
-            builder.setMessage("You must have a graph drawn in order to highlight a value.").show();
+            builder.setMessage(R.string.no_graph_error).show();
             return;
         }
 
         Highlight[] highlighted = lineChart.getHighlighted();
+
         if (highlighted != null && highlighted.length > 0) {
             if (!wasStartMarked) {
                 // Remember the starting point
-                RealmPointModel startPoint = getPointFromHighlight(highlighted[0]);
-                highlightsModel.setStartPoint(startPoint);
+                startX = highlighted[0].getX();
+                startY = highlighted[0].getY();
+
                 wasStartMarked = true;
 
-                startPointTextView.setText("Start: (" + startPoint.getxCoor() + ", " + startPoint.getyCoor() + ")");
+                startPointTextView.setText("Start: (" + Math.round(startX * 6) + ", " + startY + ")");
             } else {
                 // Remember the end point & insert/update the model into Realm
-                RealmPointModel endPoint = getPointFromHighlight(highlighted[0]);
-                highlightsModel.setEndPoint(endPoint);
+                endX = highlighted[0].getX();
+                endY = highlighted[0].getY();
+
                 wasStartMarked = false;
 
-                endPointTextView.setText("End: (" + endPoint.getxCoor() + ", " + endPoint.getyCoor() + ")");
+                if (startX >= endX) {
+                    Toast.makeText(this, R.string.start_end_warning, Toast.LENGTH_SHORT).show();
+                    startPointTextView.setText("");
+                    return;
+                }
 
-                writeHighlightsToRealm();
+                endPointTextView.setText("End: (" + Math.round(endX * 6) + ", " + endY + ")");
+
+                writeHighlightsToRealm(startX, startY, endX, endY);
             }
         } else {
-            Toast.makeText(this, "Position the highlighter first!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.position_highlighter, Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void setDataToChart(RealmResults<RealmPointModel> points) {
-        RealmLineDataSet<RealmPointModel> realmDataSet = new RealmLineDataSet<>(points, "xCoor", "yCoor");
+    private void createChart() {
+        if (chartUuid != null) {
+            // Read points from Realm and show the chart
+            if (isChartHighlighted()) {
+                setDataToHighlightedChart();
+            } else {
+                setDataToChart();
+            }
+        }
+    }
 
-        // It's ugly, but it works
-        realmDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-        realmDataSet.setColor(Color.parseColor("#3C9F40"));
-        realmDataSet.setDrawCircles(false);
+    private boolean isChartHighlighted() {
+        return realm.where(RealmHighlightsModel.class).equalTo("parentChart.uuid", chartUuid).findFirst() != null;
+    }
 
-        Drawable gradientDrawable = ContextCompat.getDrawable(this, R.drawable.fade_green);
-        realmDataSet.setFillDrawable(gradientDrawable);
-        realmDataSet.setDrawFilled(true);
+    private void setDataToHighlightedChart() {
+        RealmHighlightsModel highlight = realm.where(RealmHighlightsModel.class).equalTo("parentChart.uuid", chartUuid).findFirst();
+        float highlightStartXCoor = highlight.getStartPoint().getxCoor();
+        float highlighStartYCoor = highlight.getStartPoint().getyCoor();
+        float highlightEndXCoor = highlight.getEndPoint().getxCoor();
+        float highlightEndYCoor = highlight.getEndPoint().getyCoor();
 
-        realmDataSet.setDrawHorizontalHighlightIndicator(false);
-        realmDataSet.setHighLightColor(Color.parseColor("#C62828"));
+        // Get separate realm result lists
+        RealmResults<RealmPointModel> pointsLeftOfHighlight = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).lessThanOrEqualTo("xCoor", highlightStartXCoor).findAll();
+        RealmResults<RealmPointModel> highlightedPoints = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).between("xCoor", highlightStartXCoor, highlightEndXCoor).findAll();
+        RealmResults<RealmPointModel> pointsRightOfHighlight = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).greaterThanOrEqualTo("xCoor", highlightEndXCoor).findAll();
+
+        // Create custom non-highlight sets
+        RealmLineDataSet<RealmPointModel> dataSetLeft = createCustomDataSet(pointsLeftOfHighlight, false);
+        RealmLineDataSet<RealmPointModel> dataSetRight = createCustomDataSet(pointsRightOfHighlight, false);
+
+        // Create custom highlight set
+        RealmLineDataSet<RealmPointModel> dataSetHighlight = createCustomDataSet(highlightedPoints, true);
+
+        RealmLineDataSet[] dataArray = new RealmLineDataSet[3];
+        dataArray[0] = dataSetLeft;
+        dataArray[1] = dataSetHighlight;
+        dataArray[2] = dataSetRight;
+
+        configureChart(new LineData(dataArray));
+
+        startPointTextView.setText("Start: (" + Math.round(highlightStartXCoor * 6) + ", " + highlighStartYCoor + ")");
+        endPointTextView.setText("End: (" + Math.round(highlightEndXCoor * 6) + ", " + highlightEndYCoor + ")");
+    }
+
+    private void setDataToChart() {
+        RealmResults<RealmPointModel> points = getAllPointsForChartUUID(chartUuid);
+        RealmLineDataSet<RealmPointModel> realmDataSet = createCustomDataSet(points, false);
 
         configureChart(new LineData(realmDataSet));
+    }
+
+    private RealmLineDataSet<RealmPointModel> createCustomDataSet(RealmResults<RealmPointModel> points, boolean isHighlightSet) {
+        RealmLineDataSet<RealmPointModel> dataSet = new RealmLineDataSet<>(points, "xCoor", "yCoor");
+
+        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        dataSet.setColor(isHighlightSet ? R.color.highlightChartColor : R.color.regularChartColor);
+        dataSet.setDrawCircles(false);
+
+        Drawable gradientDrawable = ContextCompat.getDrawable(this, isHighlightSet ? R.drawable.fade_red : R.drawable.fade_green);
+        dataSet.setFillDrawable(gradientDrawable);
+        dataSet.setDrawFilled(true);
+
+        dataSet.setDrawHorizontalHighlightIndicator(false);
+        dataSet.setHighlightLineWidth(2);
+        dataSet.setHighLightColor(R.color.highlighterColor);
+
+        return dataSet;
     }
 
     private void configureChart(LineData lineData) {
         // Set up X-axis
         XAxis xAxis = lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setEnabled(false);
 
         // Set up Y-axis
         YAxis yAxis = lineChart.getAxisRight();
         yAxis.setEnabled(false);
 
+        lineChart.getLegend().setEnabled(false);
+
         // Set up description
         Description desc = new Description();
-        desc.setText("Overlaping reads");
+        desc.setText(getString(R.string.overlap_reads));
         lineChart.setDescription(desc);
 
         lineChart.setData(lineData);
+
         lineChart.invalidate();
 
         isGraphShown = true;
@@ -183,31 +252,52 @@ public class GraphingActivity extends AppCompatActivity {
         return realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).findAll();
     }
 
-    /**
-     * For a given highlight, returns a matching point in the current chart.
-     *
-     * @param highlight The highlight to get a point from
-     * @return RealmPointModel matching the highlighted point
-     */
-    private RealmPointModel getPointFromHighlight(Highlight highlight) {
-        return realm.where(RealmPointModel.class)
-                .equalTo("xCoor", highlight.getX())
-                .equalTo("yCoor", highlight.getY())
-                .equalTo("chart.uuid", chartUuid).findFirst();
-    }
+    private void writeHighlightsToRealm(final float startX, final float startY, final float endX, final float endY) {
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm bgRealm) {
+                RealmHighlightsModel highlightsModel = bgRealm.where(RealmHighlightsModel.class)
+                        .equalTo("parentChart.uuid", chartUuid)
+                        .findFirst();
 
-    private void writeHighlightsToRealm() {
-        if (highlightsModel != null) {
-            realm.executeTransaction(new Realm.Transaction() {
-                @Override
-                public void execute(Realm bgRealm) {
-                    // TODO Look this over, it's creating multiple charts when changing highlights for a single chart
+                RealmPointModel startPoint = bgRealm.where(RealmPointModel.class)
+                        .equalTo("xCoor", startX)
+                        .equalTo("yCoor", startY)
+                        .equalTo("chart.uuid", chartUuid).findFirst();
+
+                RealmPointModel endPoint = bgRealm.where(RealmPointModel.class)
+                        .equalTo("xCoor", endX)
+                        .equalTo("yCoor", endY)
+                        .equalTo("chart.uuid", chartUuid).findFirst();
+
+                RealmChartModel parentChart = bgRealm.where(RealmChartModel.class)
+                        .equalTo("uuid", chartUuid)
+                        .findFirst();
+
+                if (highlightsModel != null) {
+                    highlightsModel.setStartPoint(startPoint);
+                    highlightsModel.setEndPoint(endPoint);
                     bgRealm.copyToRealmOrUpdate(highlightsModel);
-
-                    Log.d(TAG, "Highlights successfully copied to Realm!");
-                    Toast.makeText(GraphingActivity.this, "Highlighting complete!", Toast.LENGTH_SHORT).show();
+                } else {
+                    highlightsModel = bgRealm.createObject(RealmHighlightsModel.class, UUID.randomUUID().toString());
+                    highlightsModel.setStartPoint(startPoint);
+                    highlightsModel.setEndPoint(endPoint);
+                    highlightsModel.setParentChart(parentChart);
                 }
-            });
-        }
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Highlights successfully copied to Realm!");
+                Toast.makeText(GraphingActivity.this, R.string.highlight_complete, Toast.LENGTH_SHORT).show();
+                createChart();
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Log.d(TAG, "Failed to copy highlight to realm");
+                Toast.makeText(GraphingActivity.this, R.string.highlight_error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

@@ -10,5 +10,6 @@ import xyz.filipfloreani.overlapr.model.RealmChartModel;
 
 public interface OnHistoryItemClickListener {
     void onItemClick(View v, int position);
+
     boolean onItemLongClick(View v, RealmChartModel chartModel);
 }

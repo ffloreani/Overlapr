@@ -26,17 +26,22 @@ public final class GeneralUtils {
         adBuilder.setTitle("Watch out")
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {}
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                    }
                 });
 
         return adBuilder;
     }
 
-    public static Date fromTimestamp(long seconds) {
+    public static Date dateFromTimestamp(long seconds) {
         if (seconds == -1) {
             return null;
         }
         return new Date(seconds * 1000);
+    }
+
+    public static String stringFromTimestamp(long seconds) {
+        return new java.text.SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new java.util.Date(seconds * 1000));
     }
 
     public static long toTimestamp(Date date) {

@@ -1,6 +1,7 @@
 package xyz.filipfloreani.overlapr.graphing;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -13,6 +14,7 @@ import java.io.InputStreamReader;
 
 import io.realm.Realm;
 import xyz.filipfloreani.overlapr.HomeActivity;
+import xyz.filipfloreani.overlapr.R;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
 import xyz.filipfloreani.overlapr.model.RealmPointModel;
 import xyz.filipfloreani.overlapr.utils.GeneralUtils;
@@ -35,8 +37,21 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        dialog.setMessage("Parsing charts to Realm...");
+        dialog.setMessage(activity.getString(R.string.fumbling_charts));
         dialog.setIndeterminate(true);
+        dialog.setCancelable(true);
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                ChartsParserTask.this.cancel(true);
+            }
+        });
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                ChartsParserTask.this.cancel(true);
+            }
+        });
         dialog.show();
     }
 
@@ -51,16 +66,26 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    if (isCancelled()) {
+                        break;
+                    }
+
                     // Create a RealmChartModel
                     String chartID = "Chart " + line.substring(0, line.indexOf(' '));
+                    if (realm.where(RealmChartModel.class).equalTo("title", chartID).findFirst() != null) {
+                        Log.d(TAG, "Chart " + chartID + " already exists");
+                        continue;
+                    }
+
                     Log.d(TAG, "Creating chart: " + chartID);
                     RealmChartModel chartModel = new RealmChartModel(chartID, GeneralUtils.getUTCNow());
 
                     // Read each value and create a RealmPointModel for each one
                     int pointIndex = 1;
                     line = line.substring(line.indexOf(' ') + 1);
-                    for (String value : line.split("\\s+")) {
-                        RealmPointModel pointModel = new RealmPointModel(pointIndex++, Float.parseFloat(value), chartModel);
+                    String split[] = line.split("\\s+");
+                    for (int i = 0; i < split.length; i += 6) {
+                        RealmPointModel pointModel = new RealmPointModel(pointIndex++, Float.parseFloat(split[i]), chartModel);
                         chartModel.addPoint(pointModel);
                     }
 

@@ -12,6 +12,9 @@ import io.realm.RealmConfiguration;
  */
 public class OverlaprApplication extends Application {
 
+    public static final String AUTH_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/auth";
+    public static final String REALM_URL = "realm://" + BuildConfig.OBJECT_SERVER_IP + ":9080/~/realm-overlapr";
+
     private OverlaprApplication overlaprInstance;
 
     public OverlaprApplication getOverlaprInstance() {
