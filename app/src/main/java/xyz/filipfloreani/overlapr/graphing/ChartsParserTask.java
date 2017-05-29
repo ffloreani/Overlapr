@@ -84,7 +84,7 @@ public class ChartsParserTask extends AsyncTask<Uri, Void, Void> {
                     int pointIndex = 1;
                     line = line.substring(line.indexOf(' ') + 1);
                     String split[] = line.split("\\s+");
-                    for (int i = 0; i < split.length; i += 3) {
+                    for (int i = 0; i < split.length; i += 6) {
                         RealmPointModel pointModel = new RealmPointModel(pointIndex++, Float.parseFloat(split[i]), chartModel);
                         chartModel.addPoint(pointModel);
                     }

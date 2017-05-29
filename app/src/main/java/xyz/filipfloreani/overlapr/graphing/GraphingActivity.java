@@ -1,7 +1,6 @@
 package xyz.filipfloreani.overlapr.graphing;
 
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -122,7 +121,7 @@ public class GraphingActivity extends AppCompatActivity {
 
                 wasStartMarked = true;
 
-                startPointTextView.setText("Start: (" + startX + ", " + startY + ")");
+                startPointTextView.setText("Start: (" + Math.round(startX * 6) + ", " + startY + ")");
             } else {
                 // Remember the end point & insert/update the model into Realm
                 endX = highlighted[0].getX();
@@ -136,7 +135,7 @@ public class GraphingActivity extends AppCompatActivity {
                     return;
                 }
 
-                endPointTextView.setText("End: (" + endX + ", " + endY + ")");
+                endPointTextView.setText("End: (" + Math.round(endX * 6) + ", " + endY + ")");
 
                 writeHighlightsToRealm(startX, startY, endX, endY);
             }
@@ -163,7 +162,9 @@ public class GraphingActivity extends AppCompatActivity {
     private void setDataToHighlightedChart() {
         RealmHighlightsModel highlight = realm.where(RealmHighlightsModel.class).equalTo("parentChart.uuid", chartUuid).findFirst();
         float highlightStartXCoor = highlight.getStartPoint().getxCoor();
+        float highlighStartYCoor = highlight.getStartPoint().getyCoor();
         float highlightEndXCoor = highlight.getEndPoint().getxCoor();
+        float highlightEndYCoor = highlight.getEndPoint().getyCoor();
 
         // Get separate realm result lists
         RealmResults<RealmPointModel> pointsLeftOfHighlight = realm.where(RealmPointModel.class).equalTo("chart.uuid", chartUuid).lessThanOrEqualTo("xCoor", highlightStartXCoor).findAll();
@@ -183,6 +184,9 @@ public class GraphingActivity extends AppCompatActivity {
         dataArray[2] = dataSetRight;
 
         configureChart(new LineData(dataArray));
+
+        startPointTextView.setText("Start: (" + Math.round(highlightStartXCoor * 6) + ", " + highlighStartYCoor + ")");
+        endPointTextView.setText("End: (" + Math.round(highlightEndXCoor * 6) + ", " + highlightEndYCoor + ")");
     }
 
     private void setDataToChart() {
@@ -204,6 +208,7 @@ public class GraphingActivity extends AppCompatActivity {
         dataSet.setDrawFilled(true);
 
         dataSet.setDrawHorizontalHighlightIndicator(false);
+        dataSet.setHighlightLineWidth(2);
         dataSet.setHighLightColor(R.color.highlighterColor);
 
         return dataSet;
@@ -212,7 +217,7 @@ public class GraphingActivity extends AppCompatActivity {
     private void configureChart(LineData lineData) {
         // Set up X-axis
         XAxis xAxis = lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setEnabled(false);
 
         // Set up Y-axis
         YAxis yAxis = lineChart.getAxisRight();

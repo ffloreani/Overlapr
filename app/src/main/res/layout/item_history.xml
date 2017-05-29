@@ -3,13 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingTop="10dp"
+    android:background="?android:attr/selectableItemBackground"
     android:paddingBottom="10dp">
 
     <TextView
         android:id="@+id/item_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Naslov grafa"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="8dp"
@@ -21,7 +21,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/item_title"
-        android:text="04/04/2017"
         android:paddingTop="8dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"

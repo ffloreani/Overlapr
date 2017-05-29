@@ -7,6 +7,8 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
 import com.wenchao.cardstack.CardStack;
@@ -56,6 +58,25 @@ public class SortingActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         realm.close();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_sorting, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.undo:
+                if (cardStackView != null) {
+                    cardStackView.undo();
+                }
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     /**
@@ -183,18 +204,18 @@ public class SortingActivity extends AppCompatActivity {
 
     public void makeUndoSnackbar(int stringResource) {
         Snackbar.make(cardStackView, stringResource, Snackbar.LENGTH_SHORT)
-//        .setAction(R.string.undo, new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        cardStackView.undo();
-//                    }
-//                })
-//        .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
-            .show();
+                .setAction(R.string.undo, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        cardStackView.undo();
+                    }
+                })
+                .setActionTextColor(ContextCompat.getColor(SortingActivity.this, R.color.colorAccent))
+                .show();
     }
 
     private boolean isAdapterAboutToEmpty(int currentIndex) {
-        return currentIndex >= sortingStackAdapter.getCount() - 3;
+        return currentIndex >= sortingStackAdapter.getCount() - 4;
     }
 
     private void addMoreChartsToAdapter() {
@@ -231,7 +252,7 @@ public class SortingActivity extends AppCompatActivity {
                 List<RealmChartModel> realmCharts = asyncRealm.where(RealmChartModel.class).equalTo("sortingOption", 4).findAll();
 
                 Log.d(TAG, "Converting to real list...");
-                int subIndex = Math.min(realmCharts.size(), 5);
+                int subIndex = Math.min(realmCharts.size(), 7);
                 realmCharts = realmCharts.subList(0, subIndex);
 
                 List<RealmChartModel> charts = asyncRealm.copyFromRealm(realmCharts, 2);
@@ -247,11 +268,11 @@ public class SortingActivity extends AppCompatActivity {
                 addChartIfNotExist(model);
             }
 
+            sortingStackAdapter.notifyDataSetChanged();
+
             if (showProgressDialog && progressDialog.isShowing()) {
                 progressDialog.dismiss();
             }
-
-            sortingStackAdapter.notifyDataSetChanged();
         }
 
         private void addChartIfNotExist(RealmChartModel model) {
