@@ -9,29 +9,16 @@ android {
         minSdkVersion 21
         targetSdkVersion 25
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        debug {
-            // This will automatically detect the IP address of the machine building RealmTasks.
-            // It is assumed that this machine is also running the Object Server.
-            // If not, replace 'host' with the IP of the machine hosting the server.
-            buildConfigField "String", "OBJECT_SERVER_IP", "\"207.154.204.242\""
-        }
+        debug {}
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            // This will automatically detect the IP address of the machine building RealmTasks.
-            // It is assumed that this machine is also running the Object Server.
-            // If not, replace 'host' with the IP of the machine hosting the server.
-            buildConfigField "String", "OBJECT_SERVER_IP", "\"207.154.204.242\""
         }
     }
-}
-
-realm {
-    syncEnabled = true;
 }
 
 dependencies {

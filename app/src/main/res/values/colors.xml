@@ -11,4 +11,5 @@
     <color name="highlightChartColor">#E53935</color>
     <color name="regularChartColor">#3C9F40</color>
     <color name="highlighterColor">#000</color>
+    <color name="disabledColor">#666</color>
 </resources>

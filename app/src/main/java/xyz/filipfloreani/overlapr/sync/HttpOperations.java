@@ -98,6 +98,13 @@ public class HttpOperations {
                     }
                     bw.flush();
                 }
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context, "Downloaded file saved to Documents", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
     }

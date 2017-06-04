@@ -3,55 +3,74 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="xyz.filipfloreani.overlapr.graphing.GraphingActivity">
 
     <LinearLayout
         android:id="@+id/controls_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true">
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical">
 
-        <Button
-            android:id="@+id/highlight_button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="8dp"
-            android:background="@color/colorAccent"
-            android:padding="8dp"
-            android:text="@string/highlight"
-            android:textColor="#fff" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <TextView
-            android:id="@+id/start_point_value"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:padding="8dp"
-            android:layout_weight="1"/>
+            <TextView
+                android:id="@+id/start_point_value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:textAlignment="center" />
 
-        <TextView
-            android:id="@+id/end_point_value"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"/>
+            <TextView
+                android:id="@+id/end_point_value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:textAlignment="center" />
+        </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:id="@+id/highlight_start_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:layout_weight="1"
+                android:background="@color/colorAccent"
+                android:padding="8dp"
+                android:text="@string/highlight_start"
+                android:textColor="#fff" />
+
+            <Button
+                android:id="@+id/highlight_end_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:layout_weight="1"
+                android:background="@color/colorAccent"
+                android:padding="8dp"
+                android:text="@string/highlight_end"
+                android:textColor="#fff" />
+        </LinearLayout>
     </LinearLayout>
-
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_above="@id/controls_layout"
         android:layout_alignParentTop="true"
-        android:padding="16dp"
         android:layout_margin="8dp"
-        android:layout_above="@id/controls_layout"/>
+        android:padding="16dp" />
 
 </RelativeLayout>

@@ -19,6 +19,6 @@
         app:card_enable_rotation="false"
         app:card_gravity="bottom"
         app:card_margin="16dp"
-        app:card_stack_size="4" />
+        app:card_stack_size="6" />
 
 </LinearLayout>

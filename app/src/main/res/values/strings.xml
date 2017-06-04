@@ -45,4 +45,6 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="erase_history_failure">Failed to clear history</string>
+    <string name="highlight_start">Mark start</string>
+    <string name="highlight_end">Mark end</string>
 </resources>

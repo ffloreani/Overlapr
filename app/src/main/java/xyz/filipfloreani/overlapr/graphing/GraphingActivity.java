@@ -42,14 +42,14 @@ public class GraphingActivity extends AppCompatActivity {
     private RealmAsyncTask writeTransaction = null;
 
     private LineChart lineChart;
-    private Button highlightButton;
+    private Button highlightStartButton;
+    private Button highlightEndButton;
     private TextView startPointTextView;
     private TextView endPointTextView;
 
     private boolean isGraphShown = false;
 
     private String chartUuid = null;
-    private boolean wasStartMarked = false;
 
     private float startX;
     private float startY;
@@ -72,16 +72,26 @@ public class GraphingActivity extends AppCompatActivity {
         lineChart.setHardwareAccelerationEnabled(true);
         lineChart.setScaleYEnabled(false);
 
-        // Highlighting button & text views
-        highlightButton = (Button) findViewById(R.id.highlight_button);
+        // Highlighting buttons & text views
+        highlightStartButton = (Button) findViewById(R.id.highlight_start_button);
+        highlightEndButton = (Button) findViewById(R.id.highlight_end_button);
         startPointTextView = (TextView) findViewById(R.id.start_point_value);
         endPointTextView = (TextView) findViewById(R.id.end_point_value);
 
-        highlightButton.setVisibility(View.GONE);
-        highlightButton.setOnClickListener(new View.OnClickListener() {
+        highlightStartButton.setVisibility(View.GONE);
+        highlightEndButton.setVisibility(View.GONE);
+
+        highlightStartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showHighlightValue();
+                showHighlightValue(true);
+            }
+        });
+        highlightEndButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showHighlightValue(false);
+                writeHighlightsToRealm(startX, startY, endX, endY);
             }
         });
 
@@ -104,7 +114,7 @@ public class GraphingActivity extends AppCompatActivity {
         return sp.getString(HomeActivity.SHARED_PREF_CHART_UUID, null);
     }
 
-    private void showHighlightValue() {
+    private void showHighlightValue(boolean isStart) {
         if (!isGraphShown) {
             AlertDialog.Builder builder = GeneralUtils.buildWatchOutDialog(this);
             builder.setMessage(R.string.no_graph_error).show();
@@ -114,33 +124,52 @@ public class GraphingActivity extends AppCompatActivity {
         Highlight[] highlighted = lineChart.getHighlighted();
 
         if (highlighted != null && highlighted.length > 0) {
-            if (!wasStartMarked) {
+            if (isStart) {
                 // Remember the starting point
                 startX = highlighted[0].getX();
                 startY = highlighted[0].getY();
 
-                wasStartMarked = true;
-
-                startPointTextView.setText("Start: (" + Math.round(startX * 6) + ", " + startY + ")");
+                showStartValue();
             } else {
                 // Remember the end point & insert/update the model into Realm
                 endX = highlighted[0].getX();
                 endY = highlighted[0].getY();
 
-                wasStartMarked = false;
-
-                if (startX >= endX) {
-                    Toast.makeText(this, R.string.start_end_warning, Toast.LENGTH_SHORT).show();
-                    startPointTextView.setText("");
-                    return;
-                }
-
-                endPointTextView.setText("End: (" + Math.round(endX * 6) + ", " + endY + ")");
-
-                writeHighlightsToRealm(startX, startY, endX, endY);
+                showEndValue();
             }
+
+            changeButtonsState();
         } else {
             Toast.makeText(this, R.string.position_highlighter, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showStartValue() {
+        startPointTextView.setText("Start: (" + Math.round(startX * 6) + ", " + startY + ")");
+    }
+
+    private void showEndValue() {
+        if (startX >= endX) {
+            Toast.makeText(this, R.string.start_end_warning, Toast.LENGTH_SHORT).show();
+            startPointTextView.setText("");
+            return;
+        }
+
+        endPointTextView.setText("End: (" + Math.round(endX * 6) + ", " + endY + ")");
+    }
+
+    private void changeButtonsState() {
+        highlightStartButton.setEnabled(!highlightStartButton.isEnabled());
+        highlightEndButton.setEnabled(!highlightEndButton.isEnabled());
+
+        int disabledColor = ContextCompat.getColor(this, R.color.disabledColor);
+        int accentColor = ContextCompat.getColor(this, R.color.colorAccent);
+        if (!highlightStartButton.isEnabled()) {
+            GeneralUtils.animateBackgroundColorChange(highlightStartButton, accentColor, disabledColor);
+            GeneralUtils.animateBackgroundColorChange(highlightEndButton, disabledColor, accentColor);
+        } else {
+            GeneralUtils.animateBackgroundColorChange(highlightStartButton, disabledColor, accentColor);
+            GeneralUtils.animateBackgroundColorChange(highlightEndButton, accentColor, disabledColor);
         }
     }
 
@@ -235,7 +264,10 @@ public class GraphingActivity extends AppCompatActivity {
         lineChart.invalidate();
 
         isGraphShown = true;
-        highlightButton.setVisibility(View.VISIBLE);
+        highlightStartButton.setVisibility(View.VISIBLE);
+        highlightEndButton.setVisibility(View.VISIBLE);
+        highlightEndButton.setEnabled(false);
+        highlightEndButton.setBackgroundColor(ContextCompat.getColor(this, R.color.disabledColor));
     }
 
     private String getChartTitle(String chartUuid) {

@@ -11,6 +11,7 @@ import io.realm.OrderedRealmCollection;
 import io.realm.RealmRecyclerViewAdapter;
 import xyz.filipfloreani.overlapr.R;
 import xyz.filipfloreani.overlapr.model.RealmChartModel;
+import xyz.filipfloreani.overlapr.utils.GeneralUtils;
 
 /**
  * Created by filipfloreani on 04/04/2017.
@@ -54,7 +55,7 @@ public class HistoryAdapter extends RealmRecyclerViewAdapter<RealmChartModel, Hi
         RealmChartModel model = getItem(position);
         if (model != null) {
             holder.titleTextView.setText(model.getTitle());
-            holder.creationDateTextView.setText(model.getCreationDate().toString());
+            holder.creationDateTextView.setText(GeneralUtils.formatDate(model.getCreationDate()));
         }
     }
 
